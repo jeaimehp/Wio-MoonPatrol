@@ -9,3 +9,4 @@
 *.elf
 *.bin
 *.hex
+test-captures/

@@ -12,7 +12,7 @@ Read this file at the start of a session, then `git log` and `git status`.
 | M0 Handoff and local repo | done in this commit |
 | M1 Toolchain and device link | proposed |
 | M2 Atari 2600 still scene | proposed |
-| M3 Scroll, holes, and jump | proposed |
+| M3 Scroll, move, holes, and jump | proposed |
 | M4 Shooting and score | proposed |
 | M5 Time and date in the game HUD | proposed |
 | M6 Desk-buddy pass | proposed |
@@ -35,6 +35,28 @@ The look to match is `reference/atari-2600.png` (320×240, the same size as the 
 
 The reference second line reads like `A- 2  TIME 032`. On this buddy that line is the date and the clock, for example `10-12  TIME 12:47`. The score above it stays the game score. The course bar stays under that line.
 
+## Play reference
+
+Behavior comes from [NiccoloBalestrieri/MoonPatrol](https://github.com/NiccoloBalestrieri/MoonPatrol), a 2019 University of Parma Python project (`main`, no license). Read it for the rules. Do not copy it into this repo, and do not port `MoonPatrolGui.py`, `g2d.py`, or the sprite sheets named in `Constants.py`:
+
+- `https://tomamic.github.io/images/sprites/moon-patrol.png`
+- `https://tomamic.github.io/images/sprites/moon-patrol-bg.png`
+
+Those sheets are the detailed arcade look: a sprite buggy and two scrolling mountain bands. This buddy draws flat 2600 shapes instead. One blue hill, not those two bands.
+
+Reimplement these rules on the Wio:
+
+- An arena of actors. The buggy, holes, rocks, and attackers move, then rectangles are tested for overlap.
+- The ground scrolls left on its own. The buggy can also move forward and back on the screen.
+- Holes come in a small and a large size. Rocks come in a one-shot size and a two-shot size. Both scroll with the ground.
+- Up to three flying attackers. They reverse at the screen edges and sometimes drop a bomb. A bomb that reaches the ground can open a hole.
+- A click fires one ground bullet and one air bullet, same as `Rover.attack`.
+- Gravity pulls the buggy down after a jump. Autoplay calls that jump. Their keyboard uses ArrowUp for it. This buddy does not.
+
+Leave out their ground monster, the 30-second countdown, the win and lose alerts, and scoring only by survival time. Destroying a rock is still +100. Destroying an attacker is still +200. A crash still recovers and keeps the score.
+
+Their `MoonPatrolTest.py` is the checklist for the rules: move changes position, a jump rises, a bullet removes a one-shot rock, a two-shot rock takes two hits, an attacker dies on a bullet. On the device, serial lines and a C920 frame stand in for that file.
+
 ## Hardware
 
 Seeed Wio Terminal, ATSAMD51P19 (the SAMD51 board this project calls the D51). Confirmed on USB at the time of M0.
@@ -55,15 +77,39 @@ The SAMD51 clock resets when USB power drops. There is no battery-backed RTC. M5
 
 PlatformIO is not installed yet. M1 installs it. Board id `seeed_wio_terminal`, platform `atmelsam`, framework `arduino`. Display library `seeed-studio/Seeed_Arduino_LCD`. Clock library `seeed-studio/Seeed Arduino RTC`.
 
+## Camera
+
+A Logitech HD Pro Webcam C920 is aimed at the Wio screen. Visual tests use a frame from that camera.
+
+| Item | Value |
+| --- | --- |
+| Name | HD Pro Webcam C920 |
+| AVFoundation video index | `0` |
+| USB | VendorID 1133, ProductID 2093, Unique ID `0x121000046d082d` |
+
+Checked 2026-10-12: a frame shows the terminal face-on, panel lit, blue five-way on the right of the bezel. The panel is the bright rectangle near the center. It is small in the 1920×1080 frame, enough to judge layout and colors. If HUD digits are unreadable, move the camera closer before failing the test.
+
+Do not use the OBSBOT Meet 2, the MacBook Pro camera, or the JaketheDog camera. Those are also on this Mac.
+
+Capture after the panel has had a second to settle:
+
+```
+mkdir -p test-captures
+imagesnap -d "HD Pro Webcam C920" -w 2.0 test-captures/<milestone>.jpg
+```
+
+`imagesnap` and `ffmpeg` are installed. `test-captures/` is gitignored. The desk and the monitor behind the Wio are in the frame, so do not commit those JPEGs. Record pass or fail in this file, and what the frame showed.
+
 ## Choices in this plan
 
 Approving M1–M6 approves these choices. Say so if one of them should change before M1.
 
 - Draw on a 2-pixel grid so the scene stays chunky like the 2600. One blue hill, not the arcade’s two ranges.
-- Cruise speed is fixed. The buggy stays on the left.
-- Jump: five-way up or button A. Shoot: five-way press or button B. A shot fires a ground bullet and an air bullet. Only one of each is in flight.
+- The ground scrolls left at a steady pace. Five-way up moves the buggy forward (right). Five-way down moves it back (left). It stays on screen.
+- Five-way click shoots. A shot fires a ground bullet and an air bullet. Only one of each is in flight.
+- Jump is automatic in autoplay and while the player is driving, so holes are still cleared. Click does not jump. Their Python code jumps on ArrowUp. This plan does not.
 - Rock destroyed: 100 points. Attacker destroyed: 200 points. A crash does not clear the score.
-- With no button pressed, the buddy jumps holes and shoots threats itself. A press still jumps or shoots immediately.
+- Autoplay runs when the stick has been idle for about 3 seconds: it holds the buggy on the left, jumps holes, and shoots threats. Pushing the stick takes over movement immediately. A click takes over shooting immediately. Auto-jump keeps running during play.
 - HUD, top to bottom, yellow on black: centered score; `MM-DD  TIME HH:MM` with a blinking colon; segmented course bar. Seconds are the blink, not extra digits.
 - Clock source is the Mac, sent as one line: `T2026-10-12 12:47:03`. Compile time is only a fallback before that line arrives.
 - Sound, Wi-Fi, NTP, saved high score, lives, and game over are outside this plan.
@@ -75,9 +121,9 @@ Every code milestone has a compile test and a device test. A milestone stays ope
 - Compile: `pio run` from the repo root exits 0.
 - Flash: `pio run -t upload --upload-port /dev/cu.usbmodem124301` exits 0. Reconfirm the port with `ioreg` if the number changed. The callout device under the node named `Seeed Wio Terminal` is the port.
 - Serial: `pio device monitor --port /dev/cu.usbmodem124301 --baud 115200`. Firmware lines that tests look for are listed on each milestone.
-- Screen: a person looks at the panel and checks the boxes. This session cannot see the LCD. Do not mark a visual test passed without that check.
+- Screen: capture a frame with the C920 command in the Camera section, then judge the milestone boxes from that frame. A screen box is passed only when the frame shows it.
 
-Firmware should print `READY` after boot, then event lines such as `JUMP`, `CRASH`, `RECOVER`, `ROCK 100`, `ATTACKER 200`, `SCORE n`, and `NOW YYYY-MM-DD HH:MM:SS`.
+Firmware should print `READY` after boot, then event lines such as `JUMP`, `POS n`, `SHOT`, `CRASH`, `RECOVER`, `ROCK 100`, `ATTACKER 200`, `SCORE n`, and `NOW YYYY-MM-DD HH:MM:SS`.
 
 ## Git
 
@@ -129,17 +175,17 @@ A static frame matches the reference layout. Nothing moves yet.
 - [ ] Screen: yellow centered score, a second HUD line, a segmented course bar
 - [ ] Results recorded in this section, then commit
 
-## M3 — Scroll, holes, and jump
+## M3 — Scroll, move, holes, and jump
 
 **State:** proposed
 
-The ground scrolls. Holes open in the green. The jump control clears a hole. Landing in a hole crashes, the scroll pauses, the buggy recovers, and the score is unchanged.
+The ground scrolls left. Five-way up moves the buggy forward. Five-way down moves it back. Holes open in the green, small and large. Autoplay jumps them. Landing in a hole crashes, the scroll pauses, the buggy recovers, and the score is unchanged.
 
 **Tests**
 
 - [ ] `pio run` exits 0
-- [ ] Serial shows `JUMP` when button A or five-way up is pressed on the ground
-- [ ] A jump started before a hole clears it (screen check)
+- [ ] Five-way up prints `POS` with a higher value than five-way down, and the frame shows the buggy farther right, then farther left
+- [ ] With the stick idle, serial shows `JUMP` before a hole and the frame shows the buggy clearing it
 - [ ] Landing in a hole prints `CRASH` then `RECOVER`, and the scene is moving again
 - [ ] `SCORE` after recover equals `SCORE` before the crash
 - [ ] Results recorded in this section, then commit
@@ -153,8 +199,9 @@ Ground shots remove rocks. Air shots remove attackers. The yellow score matches 
 **Tests**
 
 - [ ] `pio run` exits 0
-- [ ] Button B or five-way press prints a shot event and only one ground bullet and one air bullet exist at a time
-- [ ] Destroying a rock prints `ROCK 100` and increases `SCORE` by 100
+- [ ] Five-way click prints `SHOT`. Only one ground bullet and one air bullet exist at a time
+- [ ] Destroying a one-shot rock prints `ROCK 100` and increases `SCORE` by 100
+- [ ] A two-shot rock is still there after one `SHOT` and prints `ROCK 100` only on the second hit
 - [ ] Destroying an attacker prints `ATTACKER 200` and increases `SCORE` by 200
 - [ ] The centered HUD number matches the latest `SCORE` line (screen check)
 - [ ] A crash still does not clear the score
@@ -180,13 +227,13 @@ The second HUD line shows the date in the lives slot and the clock in the TIME s
 
 **State:** proposed
 
-Left alone, the buggy jumps holes and shoots rocks and attackers. Buttons still work during that run. Score climbs. The clock stays on the HUD.
+Left alone, the buggy jumps holes and shoots rocks and attackers. Taking the stick sets the speed, and a click shoots. Score climbs. The clock stays on the HUD.
 
 **Tests**
 
 - [ ] `pio run` exits 0
 - [ ] Hands off for one full course bar: serial shows at least one `JUMP` and at least one of `ROCK` or `ATTACKER`, and `SCORE` is higher at the end
-- [ ] During a later pass, a jump press prints `JUMP` and a shoot press fires
+- [ ] During a later pass, five-way up and down print `POS`, and a click prints `SHOT`
 - [ ] Screen still matches the reference layout, with a live score and a live `MM-DD  TIME HH:MM`
 - [ ] No lockup over that run
 - [ ] Results recorded in this section, then commit
@@ -197,4 +244,5 @@ Left alone, the buggy jumps holes and shoots rocks and attackers. Buttons still 
 2. If M1–M6 are still `proposed`, stop and wait for approval.
 3. If they are approved, do the first milestone that is not `done`.
 4. Reconfirm the Wio port before flashing. Skip `/dev/cu.usbmodem21401`.
-5. Write test results into the milestone before committing.
+5. For every screen check, capture from the C920 only (`imagesnap -d "HD Pro Webcam C920"`). Leave the JPEG in `test-captures/`.
+6. Write test results into the milestone before committing.
