@@ -5,13 +5,15 @@ Read this file at the start of a session, then `git log` and `git status`.
 
 ## Status
 
-**M1 is done.** M2–M6 are approved. Start M2.
+**M3 is next.** M2 is done and committed: the still scene with the buggy, attackers, and rock cut from the reference frame. M3–M6 are approved. Do not stop between milestones to ask permission to continue.
+
+Latest commit is M2. The board is running the M2 still scene.
 
 | Milestone | State |
 | --- | --- |
 | M0 Handoff and local repo | done |
 | M1 Toolchain and device link | done |
-| M2 Atari 2600 still scene | approved |
+| M2 Atari 2600 still scene | done |
 | M3 Scroll, move, holes, and jump | approved |
 | M4 Shooting and score | approved |
 | M5 Time and date in the game HUD | approved |
@@ -29,7 +31,7 @@ The look to match is `reference/atari-2600.png` (320×240, the same size as the 
 - Two magenta attackers in the sky
 - One rolling blue hill band
 - Flat green ground
-- Red buggy on the left, facing right
+- Buggy on the left, facing right. The drawn rectangle buggy was rejected; the 2600 buggy cut from this frame was approved.
 - Olive rock on the ground
 - Yellow HUD along the bottom: centered score, a second line, a segmented course bar
 
@@ -42,7 +44,7 @@ Behavior comes from [NiccoloBalestrieri/MoonPatrol](https://github.com/NiccoloBa
 - `https://tomamic.github.io/images/sprites/moon-patrol.png`
 - `https://tomamic.github.io/images/sprites/moon-patrol-bg.png`
 
-Those sheets are the detailed arcade look: a sprite buggy and two scrolling mountain bands. This buddy draws flat 2600 shapes instead. One blue hill, not those two bands.
+Those sheets are the detailed arcade look: a sprite buggy and two scrolling mountain bands. Do not use them. One blue hill, not those two bands. The hill, ground, attackers, and HUD stay flat 2600 shapes. The vehicle is the exception below.
 
 Reimplement these rules on the Wio:
 
@@ -56,6 +58,51 @@ Reimplement these rules on the Wio:
 Leave out their ground monster, the 30-second countdown, the win and lose alerts, and scoring only by survival time. Destroying a rock is still +100. Destroying an attacker is still +200. A crash still recovers and keeps the score.
 
 Their `MoonPatrolTest.py` is the checklist for the rules: move changes position, a jump rises, a bullet removes a one-shot rock, a two-shot rock takes two hits, an attacker dies on a bullet. On the device, serial lines and a C920 frame stand in for that file.
+
+## Vehicle sprites
+
+The rectangle buggy in `src/main.cpp` (`drawBuggy`) looked bad on the panel. Replace it with the vehicle frames from [General Sprites](https://www.spriters-resource.com/arcade/moonpatrol/asset/106392/), Spriters Resource asset 106392.
+
+| Item | Value |
+| --- | --- |
+| Page | `https://www.spriters-resource.com/arcade/moonpatrol/asset/106392/` |
+| Name | General Sprites |
+| Game | Moon Patrol, arcade |
+| File | PNG, 299×400, 13.14 KB |
+| Uploaded | 2018-06-13, Seven Seas |
+
+On 2026-10-12 Cloudflare blocked that page, so the PNG is not in the repo. Download it, cut out the buggy frames (run, the two wheel frames, jump, and crash if the sheet has them), and draw those on the left of the 2600 scene. Keep one blue hill. Do not switch the rest of the scene to the arcade mountains.
+
+## 2600 gameplay and sound
+
+[Moon Patrol - Atari 2600 (1080p@60fps)](https://www.youtube.com/watch?v=vGFMsMGQNuo) by Gen X Classic Gaming is the motion and sound reference. It is the 2600 game, the same look as `reference/atari-2600.png`, and it includes the sounds.
+
+Watch it before M3. Match the jump, the shots, the holes, the rocks, and the attackers to that video. Play the cues on `WIO_BUZZER`: drive, jump, shot, hit, and crash. Do not copy arcade AY register dumps or a soundtrack rip. Wi-Fi, NTP, a saved high score, lives, and game over stay out.
+
+### What the video shows (watched 2026-10-12)
+
+Measured in the browser pane: a WebAudio analyser logged loudness and pitch peaks every 40 ms over the whole 2-minute video, then still frames at each sound showed the action. Pitches are approximate.
+
+| Action | Sound | Buzzer cue |
+| --- | --- | --- |
+| Driving | Silent. No engine drone at any point. | Nothing. Keep "drive" silent to match. |
+| Shot (ground + air together) | Short rising chirp, about 1.2 kHz up to 2 kHz, about 0.12 s | Sweep 1200 → 2000 Hz in ~120 ms |
+| Jump | Falling tone, 660 → 510 Hz over about 0.3 s | Sweep 660 → 510 Hz in ~300 ms |
+| Attacker wave enters | Swoop down and back up, 980 → 690 → 980 Hz, about 0.45 s | Sweep 980 → 690 → 980 Hz in ~450 ms |
+| Attacker drops a bomb | Short fall, 870 → 625 Hz, about 0.2 s | Sweep 870 → 625 Hz in ~200 ms |
+| Rock destroyed (+100) | Low noisy thud, 85–100 Hz, about 0.3 s | Random 80–110 Hz steps for ~300 ms |
+| Attacker destroyed (+200) | No separate cue isolated; it is lost under the shot chirps | Reuse the rock thud |
+| Crash in a hole | Longer low rumble, 75–230 Hz, about 0.8–1 s. The buggy breaks into yellow checkered debris. | Random 75–230 Hz steps for ~900 ms |
+| Last life lost | Rising warble 160 → 380 Hz | Out of scope (no game over) |
+
+Motion, scaled to the 320×240 panel (video pixels × 2/3):
+
+- Jump: the buggy rises about 10 px, hangs, and lands. The whole arc is about 1.4 s. It is a shallow, floaty jump, not a high one.
+- The buggy is about 23 px wide, salmon pink, and stays near the left third.
+- Ground bullet: a short white dash moving right at buggy height. Air bullet: a yellow vertical dash moving up. Several air dashes can be on screen in the 2600 game; this plan keeps one of each.
+- A hole is a notch cut into the green that shows the blue of the hill through it. A crater appears where a bomb lands.
+- Attackers in the video are yellow-orange; the reference frame shows magenta. Keep the reference color.
+- After a crash the scene resets and the buggy drives on. The score is kept (lives drop in the 2600 game; this plan has no lives).
 
 ## Arcade notes
 
@@ -132,7 +179,7 @@ Approving M1–M6 approves these choices. Say so if one of them should change be
 - The buddy boots in autoplay: cruise speed, buggy toward the left, jumps holes, and shoots threats. A new game stays a new game until the top-left button is pressed again.
 - HUD, top to bottom, yellow on black: centered score; `MM-DD  TIME HH:MM` with a blinking colon; segmented course bar. Seconds are the blink, not extra digits.
 - Clock source is the Mac, sent as one line: `T2026-10-12 12:47:03`. Compile time is only a fallback before that line arrives.
-- Sound, Wi-Fi, NTP, saved high score, lives, and game over are outside this plan.
+- Sound follows the 2600 video above and plays on `WIO_BUZZER`. Wi-Fi, NTP, a saved high score, lives, and game over stay out.
 
 ## How to test
 
@@ -178,24 +225,29 @@ A PlatformIO project builds and flashes. The panel lights, the screen is black, 
 - [x] C920 frame `test-captures/m1.jpg` (not committed): backlight is on and the panel is black. The blue glow is the webcam's own light reflected in the glass.
 - [x] Results recorded in this section, then commit
 
-Later flashes: if `bossac` fails, double-click reset until `/Volumes/Arduino` appears, then copy a UF2. Do not flash `/dev/cu.usbmodem21401`.
+Later flashes: `python3 tools/flash_uf2.py`. It uses the UF2 bootloader. If the volume never appears after the 1200-baud touch, double-click reset until `/Volumes/Arduino` is mounted and run it again. Do not flash `/dev/cu.usbmodem21401`. Do not use `bossac`.
 
 ## M2 — Atari 2600 still scene
 
-**State:** approved
+**State:** done
 
-A static frame matches the reference layout. Nothing moves yet.
+The layout is on the device and nothing moves yet. `setRotation(3)` puts the yellow HUD toward the power port. Rotation 1 had put it on the far edge. The buggy, the attackers, and the rock are bitmaps cut pixel for pixel from `reference/atari-2600.png` and drawn by `drawBits`. Drawn shapes (rectangles, circles, rounded UFOs) looked rough on the panel; the user approved the cut sprites.
 
-**Tests**
+**Tests** (2026-10-12)
 
-- [ ] `pio run` exits 0
-- [ ] Upload exits 0
-- [ ] Screen: black sky and white stars
-- [ ] Screen: two magenta attackers
-- [ ] Screen: one blue rolling hill
-- [ ] Screen: green ground, red buggy on the left, one olive rock
-- [ ] Screen: yellow centered score, a second HUD line, a segmented course bar
-- [ ] Results recorded in this section, then commit
+- [x] `python3 -m platformio run` exits 0. RAM 4000 bytes, flash 51472 bytes.
+- [x] UF2 copy exits 0. `tools/flash_uf2.py` touched `/dev/cu.usbmodem124301` at 1200 baud, then wrote `/Volumes/Arduino/moonpatrol.uf2` (51472 bytes at 0x4000). Serial prints `SCENE`.
+- [x] Screen: black sky and white stars. C920 `test-captures/m2b.jpg` (not committed).
+- [x] Screen: two attackers in the sky. The webcam blows the light magenta (208, 132, 192) out toward white.
+- [x] Screen: one blue rolling hill.
+- [ ] Screen: green ground, buggy on the left, one rock on the right. Ground, side, and rock position matched. The user rejected the drawn buggy. Replace it from the General Sprites sheet and shoot the panel again.
+  - 2026-10-12, second pass: General Sprites could not be fetched. Cloudflare's human check would not pass in the in-app browser or in the user's Chrome, and the Internet Archive was offline. The buggy is now the 2600 sprite itself, cut pixel for pixel from `reference/atari-2600.png` (28×9, 4×1 blocks, salmon 208,112,112), plus a second wheel frame and a jump frame traced from the 1080p gameplay video. It is drawn at x 108, wheels on the ground line, as in the reference.
+  - `pio run` exits 0 (flash 51456 bytes). UF2 flash exits 0, serial prints `SCENE`.
+  - C920 `test-captures/m2c.jpg`: the buggy is a salmon shape in the right place on the ground, but the camera overexposed the panel (hill and ground read as white), so its shape cannot be judged from the frame. `imagesnap` only works from the user's Terminal panel; the agent shell is denied camera access.
+  - Third pass: the attackers (16×8) and the rock (12×6) are also cut from the reference, in 2×1 blocks, at the reference positions. Flash 50840 bytes. C920 `test-captures/m2d.jpg` shows both attackers in the reference shape; the rock is lost in the overexposed ground.
+  - [x] The user looked at the device and approved the buggy, attackers, and rock (2026-10-12).
+- [x] Screen: yellow centered `900`, second line `10-12  TIME 12:47`, segmented course bar, all toward the power port.
+- [x] Results recorded in this section, then commit
 
 ## M3 — Scroll, move, holes, and jump
 
@@ -266,9 +318,9 @@ Left alone, the buddy boots in autoplay: the buggy jumps holes and shoots rocks 
 
 ## Next session
 
-1. Read this file.
-2. M1 is done. M2–M6 are approved. Do the first milestone that is not `done`.
-3. If they are approved, do the first milestone that is not `done`.
-4. Reconfirm the Wio port before flashing. Skip `/dev/cu.usbmodem21401`.
-5. For every screen check, capture from the C920 only (`imagesnap -d "HD Pro Webcam C920"`). Leave the JPEG in `test-captures/`.
-6. Write test results into the milestone before committing.
+1. Read this file, then `git log` and `git status`.
+2. Start M3. Use the buggy frames `BUGGY_RUN_A`/`BUGGY_RUN_B` while driving and `BUGGY_JUMP` in the air, and the cue table under "What the video shows" for the buzzer.
+3. New art comes from the reference frame or the video, not drawn shapes. Crash debris is yellow and salmon checkers about the buggy's size (seen in the video).
+4. M3–M6 are approved. Continue through them without asking permission. Record each test and commit before the next one.
+5. Reconfirm the Wio port before flashing. Skip `/dev/cu.usbmodem21401`.
+6. For every screen check, capture from the C920 only (`imagesnap -d "HD Pro Webcam C920"`). Leave the JPEG in `test-captures/`. Run `imagesnap` and `tools/flash_uf2.py` from the user's Terminal panel: the agent shell is denied the camera and cannot write to `/Volumes/Arduino`. The C920 overexposes the panel in this room, so for shape checks also ask the user to look.
