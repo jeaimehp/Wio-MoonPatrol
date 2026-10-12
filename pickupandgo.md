@@ -204,7 +204,7 @@ Serial input for tests: a line `I` followed by letters injects controls, the sam
 
 ## Git
 
-Local repository only, branch `main`, no remote. One commit per finished milestone, including the `pickupandgo.md` update that records the test results. Commit message says why the milestone landed.
+Branch `main`, pushed to the private GitHub repo `https://github.com/jeaimehp/Wio-MoonPatrol` (remote `origin`, created 2026-10-12 at the user's request). It is private because it carries art traced from the Atari game and a transcription of the theme. One commit per finished milestone, including the `pickupandgo.md` update that records the test results. Commit message says why the milestone landed.
 
 Do not commit `.pio/`, build output, or secrets. `.gitignore` already excludes those. Do not change git config. Do not push unless asked.
 
