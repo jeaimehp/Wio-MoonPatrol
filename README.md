@@ -16,7 +16,7 @@ These are read back pixel by pixel from the Wio's display over USB (`tools/scree
 |---|---|
 | [![Autoplay](docs/screens/2x/autoplay.png)](docs/screens/autoplay.png) **Autoplay.** The buggy drives itself past a crater and a rock while the HUD shows the score, the MOON PATROL logo, and the course bar. | [![Title screen](docs/screens/2x/title.png)](docs/screens/title.png) **Title screen.** The MOON/PATROL logo, traced from the 2600 game, cycles through eight colors over all three attacker types. |
 | [![In a game](docs/screens/2x/game.png)](docs/screens/game.png) **In a game.** The logo gives way to the 2600's lives slot: the lives icon and how many are left. | [![Crash](docs/screens/2x/crash.png)](docs/screens/crash.png) **Crash.** The buggy breaks apart in a crater and a life is gone. |
-| [![Later waves](docs/screens/2x/later-waves.png)](docs/screens/later-waves.png) **Later waves.** Past 6,000 points, saucers and white pairs join the magenta attackers, with shots and bombs flying. | [![Game over](docs/screens/2x/game-over.png)](docs/screens/game-over.png) **Game over.** Then the title, then back to autoplay. |
+| [![Later waves](docs/screens/2x/later-waves.png)](docs/screens/later-waves.png) **Later waves.** A saucer, one of the tougher types that join past 3,000 points, with shots flying up and a rock flashing as it's destroyed. | [![Game over](docs/screens/2x/game-over.png)](docs/screens/game-over.png) **Game over.** Then the title, then back to autoplay. |
 
 The look is matched to a frame of the Atari 2600 game, kept in [`reference/atari-2600.png`](reference/atari-2600.png):
 
