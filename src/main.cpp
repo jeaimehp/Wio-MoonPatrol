@@ -1,11 +1,9 @@
 #include <Arduino.h>
-#include <RTC_SAMD51.h>
 #include <TFT_eSPI.h>
 
 #include "theme.h"
 
 TFT_eSPI tft;
-RTC_SAMD51 rtc;
 
 static constexpr uint16_t rgb(uint8_t r, uint8_t g, uint8_t b) {
   return ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
@@ -349,34 +347,6 @@ static Input readInput() {
   return in;
 }
 
-// ---- Clock ---------------------------------------------------------------
-// The SAMD51 RTC, set from the Mac with a line like `T2026-10-12 12:47:03`
-// (tools/set_clock.py). It has no battery, so a power cut loses the time;
-// until the Mac sets it, the build time stands in.
-
-static DateTime clockNow;
-
-static void printNow() {
-  char buf[32];
-  snprintf(buf, sizeof(buf), "NOW %04u-%02u-%02u %02u:%02u:%02u",
-           clockNow.year(), clockNow.month(), clockNow.day(),
-           clockNow.hour(), clockNow.minute(), clockNow.second());
-  Serial.println(buf);
-}
-
-static void setClock(const char *text) {
-  int y, mo, d, h, mi, sec;
-  if (sscanf(text, "%d-%d-%d %d:%d:%d", &y, &mo, &d, &h, &mi, &sec) != 6 ||
-      y < 2000 || mo < 1 || mo > 12 || d < 1 || d > 31 || h > 23 || mi > 59 ||
-      sec > 59) {
-    Serial.println("CLOCK BAD");
-    return;
-  }
-  rtc.adjust(DateTime(y, mo, d, h, mi, sec));
-  clockNow = rtc.now();
-  printNow();
-}
-
 // `D` reads the panel back and sends it as raw RGB565 for
 // tools/screenshot.py: a `DUMP 320 240` line, 240 rows of 320
 // little-endian pixels, then `END`.
@@ -396,9 +366,7 @@ static uint8_t lineLen = 0;
 
 static void handleLine() {
   lineBuf[lineLen] = 0;
-  if (lineBuf[0] == 'T') {
-    setClock(lineBuf + 1);
-  } else if (lineBuf[0] == 'D') {
+  if (lineBuf[0] == 'D') {
     dumpScreen();
   } else if (lineBuf[0] == 'I') {
     for (uint8_t i = 1; i < lineLen; ++i) {
@@ -1120,19 +1088,25 @@ static void renderTitle() {
   drawArt(LOGO_X, LOGO_Y, LOGO, 21, C_LOGO);
 }
 
-// The copyright line sits in the HUD rows, so it is drawn straight to the
-// panel when the logo color changes.
-static void drawCopyright() {
-  tft.fillRect(0, HUD_TOP, W, 240 - HUD_TOP, PALETTE[C_SKY]);
-  for (uint8_t r = 0; r < 8; ++r) {
-    const char *row = COPYRIGHT[r];
+// Art in the HUD rows is drawn straight to the panel, run by run.
+static void drawArtTft(int x, int y, const char *const *rows, uint8_t h,
+                       uint16_t color) {
+  for (uint8_t r = 0; r < h; ++r) {
+    const char *row = rows[r];
     for (int c = 0; row[c];) {
       if (row[c] != '#') { ++c; continue; }
       int start = c;
       while (row[c] == '#') ++c;
-      tft.drawFastHLine(COPY_X + start, COPY_Y + r, c - start, PALETTE[C_LOGO]);
+      tft.drawFastHLine(x + start, y + r, c - start, color);
     }
   }
+}
+
+// The copyright line sits in the HUD rows, so it is redrawn when the logo
+// color changes.
+static void drawCopyright() {
+  tft.fillRect(0, HUD_TOP, W, 240 - HUD_TOP, PALETTE[C_SKY]);
+  drawArtTft(COPY_X, COPY_Y, COPYRIGHT, 8, PALETTE[C_LOGO]);
 }
 
 static void renderPlayfield() {
@@ -1246,7 +1220,9 @@ static void pushChangedRows() {
 // too small to read on the desk, so the text uses the 8x8 font at 2x.
 static const int HUD_SCORE_Y = 181;
 static const int HUD_LINE2_Y = 200;
-static const int BAR_Y = 222;  // top row of the course bar
+static const int BAR_Y = 226;  // top row of the course bar
+static const int HUD_LOGO_Y = 199;  // 21 rows, ends just above the bar
+static const int LOGO_W = 92;
 
 // The course bar from the reference: two rails, checkpoint ticks every 16
 // pixels, and a 6-pixel marker that walks right as the course is driven.
@@ -1276,25 +1252,22 @@ static void drawScore() {
   tft.setTextPadding(0);
 }
 
-// Second HUD line. In a game it reads like the 2600's: the lives icon, the
-// lives count, and the clock. In autoplay the date takes the lives slot.
-// The colon blinks with the seconds.
+// Second HUD line. In a game it is the 2600's lives slot: the lives icon
+// and the count. Autoplay has no lives, so the title's MOON/PATROL logo
+// fills it, in the HUD yellow, between the score and the course bar.
 static void line2Text(char *buf, size_t n) {
-  char colon = clockNow.second() % 2 ? ' ' : ':';
   if (mode == MODE_GAME) {
-    snprintf(buf, n, "%u  TIME %02u%c%02u", lives, clockNow.hour(), colon,
-             clockNow.minute());
+    snprintf(buf, n, "%u", lives);
   } else {
-    snprintf(buf, n, "%02u-%02u  TIME %02u%c%02u", clockNow.month(),
-             clockNow.day(), clockNow.hour(), colon, clockNow.minute());
+    buf[0] = 0;
   }
 }
 
 static void drawLine2(const char *text, bool clear) {
   const uint16_t col = PALETTE[C_HUD];
-  // The text is drawn over its own background, so a tick only redraws the
-  // characters; the line is cleared only when its layout changes.
-  if (clear) tft.fillRect(0, HUD_LINE2_Y, W, 16, PALETTE[C_SKY]);
+  // The text is drawn over its own background; the line is cleared only
+  // when its layout changes.
+  if (clear) tft.fillRect(0, HUD_LOGO_Y - 1, W, BAR_Y - HUD_LOGO_Y, PALETTE[C_SKY]);
   tft.setTextColor(col, PALETTE[C_SKY]);
   tft.setTextSize(2);
   tft.setTextDatum(TL_DATUM);
@@ -1311,8 +1284,8 @@ static void drawLine2(const char *text, bool clear) {
       }
     }
     tft.drawString(text, x + 36, HUD_LINE2_Y);
-  } else {
-    tft.drawString(text, (W - textW) / 2, HUD_LINE2_Y);
+  } else if (clear) {
+    drawArtTft((W - LOGO_W) / 2, HUD_LOGO_Y, LOGO, 21, col);
   }
 }
 
@@ -1367,15 +1340,6 @@ void setup() {
   pinMode(WIO_BUZZER, OUTPUT);
   randomSeed(analogRead(A0) ^ micros());
 
-  // The RTC keeps counting through a reset; after a power cut it starts
-  // over, so fall back to the build time until the Mac sets it.
-  rtc.begin();
-  clockNow = rtc.now();
-  if (clockNow.year() < 2026) {
-    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
-    clockNow = rtc.now();
-  }
-
   tft.begin();
   // Landscape with the power port at the bottom of the desk pose.
   // Rotation 1 put the HUD on the far edge; 3 puts it toward the power port.
@@ -1391,7 +1355,6 @@ void setup() {
   Serial.println("AUTO");
   Serial.println("SOUND OFF");
   printScore();
-  printNow();
   lastFrame = fpsStart = millis();
 }
 
@@ -1399,15 +1362,6 @@ void loop() {
   readSerial();
   soundUpdate();
   uint32_t now = millis();
-  static uint32_t lastClockRead = 0, lastNowPrint = 0;
-  if (now - lastClockRead >= 100) {
-    lastClockRead = now;
-    clockNow = rtc.now();
-  }
-  if (now - lastNowPrint >= 10000) {
-    lastNowPrint = now;
-    printNow();
-  }
   if (now - lastFrame < FRAME_MS) return;
   lastFrame = (now - lastFrame > 2 * FRAME_MS) ? now : lastFrame + FRAME_MS;
 

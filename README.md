@@ -1,6 +1,6 @@
 # Wio Moon Patrol
 
-A desk buddy that plays **Moon Patrol** in the style of the Atari 2600 version on a [Seeed Studio Wio Terminal](https://www.seeedstudio.com/Wio-Terminal-p-4509.html). Left alone, it drives itself: the buggy jumps craters, shoots rocks and attackers, and the score climbs while the HUD shows today's date and a live clock. Press the top-left button and it's your game: three lives, extra lives every 10,000 points, and attackers that get tougher as you go.
+A desk buddy that plays **Moon Patrol** in the style of the Atari 2600 version on a [Seeed Studio Wio Terminal](https://www.seeedstudio.com/Wio-Terminal-p-4509.html). Left alone, it drives itself: the buggy jumps craters, shoots rocks and attackers, and the score climbs under the MOON PATROL logo. Press the top-left button and it's your game: three lives, extra lives every 10,000 points, and attackers that get tougher as you go.
 
 <p align="center">
   <img src="docs/device.jpg" alt="The Wio Terminal on a desk running Moon Patrol" width="480">
@@ -14,8 +14,8 @@ These are read back pixel by pixel from the Wio's display over USB (`tools/scree
 
 | | |
 |---|---|
-| [![Autoplay](docs/screens/2x/autoplay.png)](docs/screens/autoplay.png) **Autoplay.** The buggy drives itself past a crater and a rock while the HUD shows the score, `MM-DD  TIME HH:MM`, and the course bar. | [![Title screen](docs/screens/2x/title.png)](docs/screens/title.png) **Title screen.** The MOON/PATROL logo cycles through eight colors over all three attacker types. |
-| [![In a game](docs/screens/2x/game.png)](docs/screens/game.png) **In a game.** The second HUD line becomes the 2600 layout: lives icon, lives left, and the clock. | [![Crash](docs/screens/2x/crash.png)](docs/screens/crash.png) **Crash.** The buggy breaks apart in a crater and a life is gone. |
+| [![Autoplay](docs/screens/2x/autoplay.png)](docs/screens/autoplay.png) **Autoplay.** The buggy drives itself past a crater and a rock while the HUD shows the score, the MOON PATROL logo, and the course bar. | [![Title screen](docs/screens/2x/title.png)](docs/screens/title.png) **Title screen.** The MOON/PATROL logo, traced from the 2600 game, cycles through eight colors over all three attacker types. |
+| [![In a game](docs/screens/2x/game.png)](docs/screens/game.png) **In a game.** The logo gives way to the 2600's lives slot: the lives icon and how many are left. | [![Crash](docs/screens/2x/crash.png)](docs/screens/crash.png) **Crash.** The buggy breaks apart in a crater and a life is gone. |
 | [![Later waves](docs/screens/2x/later-waves.png)](docs/screens/later-waves.png) **Later waves.** Past 6,000 points, saucers and white pairs join the magenta attackers, with shots and bombs flying. | [![Game over](docs/screens/2x/game-over.png)](docs/screens/game-over.png) **Game over.** Then the title, then back to autoplay. |
 
 The look is matched to a frame of the Atari 2600 game, kept in [`reference/atari-2600.png`](reference/atari-2600.png):
@@ -63,28 +63,20 @@ python3 tools/flash_uf2.py
 
 `tools/flash_uf2.py` resets the Wio into its UF2 bootloader and copies the firmware onto the `Arduino` drive that appears. Set `WIO_PORT` if your serial port isn't `/dev/cu.usbmodem124301`. If the drive never appears, double-tap the Wio's reset slider and run it again.
 
-Set the clock from your computer. The Wio has no clock battery, so do this again after it loses power; until you do, it shows the time the firmware was built.
-
-```bash
-python3 tools/set_clock.py
-```
-
 ### Tools
 
 | Script | What it does |
 |---|---|
 | `tools/flash_uf2.py` | Flashes the build through the UF2 bootloader |
-| `tools/set_clock.py` | Sets the Wio's clock from this computer and reports the difference |
 | `tools/screenshot.py out.png` | Saves the Wio's screen as a PNG, read back from the display |
 | `tools/midi_to_theme.py file.mid` | Regenerates `src/theme.h` from a MIDI file |
 
 ### Serial
 
-At 115200 baud the firmware prints an event line for everything that happens (`JUMP`, `SHOT`, `ROCK 100`, `ATTACKER 200`, `HOLE 100`, `CRASH` with `BY HOLE`/`BY ROCK`/`BY BOMB`, `LIVES n`, `SCORE n`, `NOW YYYY-MM-DD HH:MM:SS`, …). It also accepts these lines:
+At 115200 baud the firmware prints an event line for everything that happens (`JUMP`, `SHOT`, `ROCK 100`, `ATTACKER 200`, `HOLE 100`, `CRASH` with `BY HOLE`/`BY ROCK`/`BY BOMB`, `LIVES n`, `SCORE n`, …). It also accepts these lines:
 
 | Line | Effect |
 |---|---|
-| `T2026-10-12 12:47:03` | Set the clock |
 | `D` | Send the screen contents (used by `tools/screenshot.py`) |
 | `I` + letters | Press controls: `R`/`L` hold right/left briefly, `U` jump, `P` fire, `C` top-left button, `S` sound button. Example: `IC` |
 
@@ -92,7 +84,6 @@ At 115200 baud the firmware prints an event line for everything that happens (`J
 
 - **Hardware:** Seeed Wio Terminal (ATSAMD51P19, 320×240 ILI9341 display, 5-way switch, three top buttons, piezo buzzer).
 - **Graphics:** an 8-bit indexed framebuffer in the 2600 palette. Only the rows that change each frame are sent to the display, which keeps it at 30 FPS. Every sprite is cut pixel for pixel from the reference frame or traced from gameplay video: the buggy and its wheel and jump frames, the three attacker types, rocks, craters, crash debris, the lives icon, and the title logo.
-- **Clock:** the SAMD51's real-time clock through the Seeed Arduino RTC library.
 - **Music:** the bass line from a Moon Patrol MIDI, moved up two octaves so the piezo can play it, stored as a 230-note table in `src/theme.h`.
 
 The full build log, with each milestone's tests and the decisions behind them, is in [`pickupandgo.md`](pickupandgo.md).
@@ -105,7 +96,7 @@ The full build log, with each milestone's tests and the decisions behind them, i
 - **Game rules:** [NiccoloBalestrieri/MoonPatrol](https://github.com/NiccoloBalestrieri/MoonPatrol), a 2019 University of Parma Python version. Its rules were reimplemented here; none of its code or art is used.
 - **Arcade behavior:** [Computer Archeology: Moon Patrol](https://computerarcheology.com/Arcade/MoonPatrol/), used for how the arcade buggy, attract mode, and craters behave.
 - **Theme music:** [Moon Patrol MIDI on VGMusic](https://www.vgmusic.com/file/688104ae3cafca92ac596b7eff54abd9.html). Its bass line is the theme the buzzer plays.
-- **Libraries:** Seeed_Arduino_LCD (bundled with the Seeed SAMD board package) and [Seeed Arduino RTC](https://github.com/Seeed-Studio/Seeed_Arduino_RTC).
+- **Library:** Seeed_Arduino_LCD, bundled with the Seeed SAMD board package.
 - [General Sprites from The Spriters Resource](https://www.spriters-resource.com/arcade/moonpatrol/asset/106392/) was considered for the buggy but could not be downloaded, so the 2600 sprites were used instead.
 
 Moon Patrol is © 1982 Irem; the Atari 2600 version is © 1983 Atari. This is a personal fan project, not affiliated with or endorsed by either.

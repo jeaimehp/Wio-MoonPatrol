@@ -363,10 +363,13 @@ The user asked for a README with screenshots, sources, and collaborators (Grok t
 
 The first capture found a bug that had been on the panel since M3: every playfield color was byte-swapped (magenta attackers showed blue, gold saucers red, the ground pink, the buggy green). On this SAMD51 build, `pushImage` sends each `uint16_t` as stored, low byte first, and ignores `setSwapBytes`. `pushRows` now byte-swaps the palette before the push. `fillRect` and text were always right, which is why the HUD stayed yellow. `readRect` returns pixels byte-swapped, and `screenshot.py` undoes that. Verified: the capture reads the hill as (49,32,156), the ground as (107,154,82), and the HUD as (189,158,90), matching the reference.
 
+## Clock and date removed, logo in the HUD (2026-10-12)
+
+The user asked to remove the time and the date from the HUD. With nothing left to show it, the RTC went too: the `Seeed Arduino RTC` dependency, the `T` serial command, the `NOW` lines, and `tools/set_clock.py` (all in history at `6945745` if wanted back). In a game the second HUD line is the lives icon and count. In autoplay the title's MOON/PATROL logo (92×21) fills that space in the HUD yellow, rows 199–219, and the course bar moved down to row 226 to clear it. The M5 section above describes the clock as it was.
+
 ## Next session
 
 1. Read this file, then `git log` and `git status`.
 2. Ask the user to listen: sound button (top middle), music, jump, shot, crash. Adjust cue pitches or the theme octave if the buzzer sounds wrong.
-3. After a power cut the clock falls back to the build time. Run `python3 tools/set_clock.py`.
-4. Reconfirm the Wio port before flashing. Skip `/dev/cu.usbmodem21401`. Close any serial logger before `tools/flash_uf2.py`, or the 1200-baud touch fails.
-5. For every screen check, capture from the C920 only (`imagesnap -d "HD Pro Webcam C920"`), run from the user's Terminal panel. Leave the JPEG in `test-captures/`.
+3. Reconfirm the Wio port before flashing. Skip `/dev/cu.usbmodem21401`. Close any serial logger before `tools/flash_uf2.py`, or the 1200-baud touch fails.
+4. For every screen check, capture from the C920 only (`imagesnap -d "HD Pro Webcam C920"`), run from the user's Terminal panel. Leave the JPEG in `test-captures/`.
