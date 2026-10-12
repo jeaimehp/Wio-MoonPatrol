@@ -377,6 +377,20 @@ static void setClock(const char *text) {
   printNow();
 }
 
+// `D` reads the panel back and sends it as raw RGB565 for
+// tools/screenshot.py: a `DUMP 320 240` line, 240 rows of 320
+// little-endian pixels, then `END`.
+static void dumpScreen() {
+  static uint16_t row[320];
+  Serial.println("DUMP 320 240");
+  for (int y = 0; y < 240; ++y) {
+    tft.readRect(0, y, 320, 1, row);
+    Serial.write((const uint8_t *)row, sizeof(row));
+  }
+  Serial.println();
+  Serial.println("END");
+}
+
 static char lineBuf[48];
 static uint8_t lineLen = 0;
 
@@ -384,6 +398,8 @@ static void handleLine() {
   lineBuf[lineLen] = 0;
   if (lineBuf[0] == 'T') {
     setClock(lineBuf + 1);
+  } else if (lineBuf[0] == 'D') {
+    dumpScreen();
   } else if (lineBuf[0] == 'I') {
     for (uint8_t i = 1; i < lineLen; ++i) {
       switch (lineBuf[i]) {
@@ -1191,13 +1207,21 @@ static void renderPlayfield() {
 }
 
 static void pushRows(int y0, int y1) {
+  // pushImage on this SAMD51 build sends each uint16_t as it sits in
+  // memory, low byte first, whatever swapBytes says; the panel wants the
+  // high byte first. So the palette is byte-swapped here. Without this
+  // every playfield color came out swapped: magenta attackers showed blue,
+  // the ground pink, the buggy green. fillRect and text were never
+  // affected, which is why the HUD stayed yellow.
+  uint16_t panel[C_COUNT];
+  for (uint8_t i = 0; i < C_COUNT; ++i) panel[i] = __builtin_bswap16(PALETTE[i]);
   static uint16_t line[W * 8];
   for (int y = y0; y < y1; y += 8) {
     int n = min(8, y1 - y);
     for (int j = 0; j < n; ++j) {
       const uint8_t *src = fb[y + j];
       uint16_t *dst = &line[j * W];
-      for (int x = 0; x < W; ++x) dst[x] = PALETTE[src[x]];
+      for (int x = 0; x < W; ++x) dst[x] = panel[src[x]];
     }
     tft.pushImage(0, y, W, n, line);
     soundUpdate();
@@ -1356,7 +1380,6 @@ void setup() {
   // Landscape with the power port at the bottom of the desk pose.
   // Rotation 1 put the HUD on the far edge; 3 puts it toward the power port.
   tft.setRotation(3);
-  tft.setSwapBytes(true);
   resetField();
   restartMusic(true);
   renderPlayfield();

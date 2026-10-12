@@ -357,6 +357,12 @@ Left alone, the buddy boots in autoplay: the buggy jumps holes and shoots rocks 
 - [ ] Extra life at 10,000 seen on the device.
 - [x] Results recorded in this section, then commit
 
+## README and the playfield color fix (2026-10-12)
+
+The user asked for a README with screenshots, sources, and collaborators (Grok through Cursor). Screenshots come from the display itself: serial `D` makes the firmware read the panel back with `readRect` and send raw RGB565, and `tools/screenshot.py` saves it as a PNG. Exact captures are in `docs/screens/`, with 2× pixel-doubled copies in `docs/screens/2x/` for the README. `docs/device.jpg` is a C920 photo cropped to the device.
+
+The first capture found a bug that had been on the panel since M3: every playfield color was byte-swapped (magenta attackers showed blue, gold saucers red, the ground pink, the buggy green). On this SAMD51 build, `pushImage` sends each `uint16_t` as stored, low byte first, and ignores `setSwapBytes`. `pushRows` now byte-swaps the palette before the push. `fillRect` and text were always right, which is why the HUD stayed yellow. `readRect` returns pixels byte-swapped, and `screenshot.py` undoes that. Verified: the capture reads the hill as (49,32,156), the ground as (107,154,82), and the HUD as (189,158,90), matching the reference.
+
 ## Next session
 
 1. Read this file, then `git log` and `git status`.
