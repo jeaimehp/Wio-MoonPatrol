@@ -6,7 +6,7 @@ A desk buddy that plays **Moon Patrol** in the style of the Atari 2600 version o
   <img src="docs/device.jpg" alt="The Wio Terminal on a desk running Moon Patrol" width="480">
 </p>
 
-<sub>The webcam washes the panel's colors out. The screenshots below are read straight off the display and show the real colors.</sub>
+<sub>The Wio in its stand on the desk. The webcam washes out the panel's colors; the screenshots below are read straight off the display and show the real colors.</sub>
 
 ## Screenshots
 
