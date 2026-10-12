@@ -5,18 +5,18 @@ Read this file at the start of a session, then `git log` and `git status`.
 
 ## Status
 
-**M5 is next.** Lives, the title screen, progressive attacker types, autoplay pace, and three shots in flight were added after M4 at the user's request (see M4b). M3 and M4 landed together in one commit (the user widened M3 mid-way: moving attackers, bombs, readable HUD, sound toggle). Their tests passed on serial with injected input; the physical 5-way and buttons still need one hands-on check by the user. M5–M6 are approved. Do not stop between milestones to ask permission to continue.
+**M6 is next.** M0–M5 are done and committed, plus the user's additions (M4b: lives, title, attacker types, autoplay pace, three shots). Still unconfirmed by hand: the top middle (sound) button and the buzzer, and the extra life at 10,000. M6 is approved. Do not stop to ask permission to continue.
 
-Latest commit is M3+M4. The board is running that build.
+Latest commit is M5. The board is running that build with the clock set from the Mac.
 
 | Milestone | State |
 | --- | --- |
 | M0 Handoff and local repo | done |
 | M1 Toolchain and device link | done |
 | M2 Atari 2600 still scene | done |
-| M3 Scroll, move, holes, and jump | done — physical switch check pending |
-| M4 Shooting and score | done — physical switch check pending |
-| M5 Time and date in the game HUD | approved |
+| M3 Scroll, move, holes, and jump | done |
+| M4 Shooting and score | done |
+| M5 Time and date in the game HUD | done |
 | M6 Desk-buddy pass | approved |
 
 Finish a milestone, record its test results, commit, then start the next one.
@@ -275,7 +275,7 @@ Built as an 8-bit indexed framebuffer for rows 0–176 with the reference palett
 - [x] Landing in a hole prints `CRASH` then `RECOVER` and the scene moves again (`test-captures/m3-switch.log`, `m4-serial-game.log`).
 - [x] `SCORE` after `RECOVER` equals `SCORE` before `CRASH` (900/900 in autoplay, 300/300 and 700/700 in a game).
 - [x] HUD text 2×, readable in `test-captures/m3a.jpg`.
-- [ ] Physical 5-way right/left/up and the top-left button, by the user.
+- [x] Physical 5-way and the top-left button, by the user (2026-10-12): after two pin remaps, right speeds up, left slows, up jumps, press shoots. The user reported "much better".
 - [x] Results recorded in this section, then commit (with M4).
 
 ## M4 — Shooting and score
@@ -296,7 +296,7 @@ The board hung once: the core's `noTone()` waits on timer TC0, whose clock is on
 - [x] HUD matches serial: C920 `test-captures/m4a.jpg` at 16:08:08 shows `1700`; serial printed `SCORE 1700` at 16:08:08.
 - [x] A crash does not clear the score (bomb and hole crashes, 300/300 and 700/700).
 - [x] Sound: autoplay boots `SOUND OFF`, `NEW` turns it on, `AUTO` turns it off, the sound button toggles (injected `IS`). Buzzer not yet confirmed by ear.
-- [ ] Physical press and the top middle button, by the user.
+- [x] Physical press, by the user. The top middle (sound) button and the buzzer are still unconfirmed by ear.
 - [x] Results recorded in this section, then commit (with M3).
 
 ## M4b — Lives, title screen, attacker types, autoplay pace
@@ -316,19 +316,25 @@ The board hung once: the core's `noTone()` waits on timer TC0, whose clock is on
 
 ## M5 — Time and date in the game HUD
 
-**State:** approved
+**State:** done
 
-The second HUD line shows the date in the lives slot and the clock in the TIME slot. A small host script sets the SAMD51 clock from the Mac.
+The second HUD line shows the date in the lives slot and the clock in the TIME slot (in a game, the lives icon and count take the date's place). `tools/set_clock.py` sets the SAMD51 RTC from the Mac. The RTC is `seeed-studio/Seeed Arduino RTC` 2.0.0 (`lib_deps`). With no battery a power cut loses the time; until the Mac sets it the board uses the build time. Serial prints `NOW …` on set and every 10 s; `CLOCK BAD` for a malformed `T` line.
 
-**Tests**
+Set the clock (from the user's Terminal panel or any shell that can open the port):
 
-- [ ] `pio run` exits 0
-- [ ] Sending `T2026-10-12 12:47:03` (with the actual current time) makes serial `NOW` match the Mac within 2 seconds
-- [ ] Screen second line shows that month-day and `TIME HH:MM`
-- [ ] The colon blinks
-- [ ] Score and course bar are still on their own rows
-- [ ] About 10 seconds after the script exits, a new `NOW` has moved forward
-- [ ] Results recorded in this section, then commit
+```
+python3 tools/set_clock.py
+```
+
+**Tests** (2026-10-12)
+
+- [x] `pio run` exits 0. Flash 75008 bytes.
+- [x] Before setting, the board read `16:45:55` at Mac `16:46:15` (build-time fallback). `set_clock.py` sent `T2026-10-12 16:46:24`; the board answered `NOW 2026-10-12 16:46:24`, −0.1 s from the Mac.
+- [x] C920 `test-captures/m5a.jpg` (exposure is good in this one): `10-12  TIME 16:46`.
+- [x] The colon blinks: `m5a.jpg` at 16:46:39 shows `16:46`, `m5b.jpg` a second later `16 46` (`test-captures/m5-blink.jpg`).
+- [x] Score (`1800`) and the course bar are on their own rows in the same frame.
+- [x] After the script exited, `NOW` lines at Mac 16:46:35, :45, :55 read 16:46:35, :45, :55.
+- [x] Results recorded in this section, then commit
 
 ## M6 — Desk-buddy pass
 
