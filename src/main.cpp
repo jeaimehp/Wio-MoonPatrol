@@ -2,6 +2,8 @@
 #include <RTC_SAMD51.h>
 #include <TFT_eSPI.h>
 
+#include "theme.h"
+
 TFT_eSPI tft;
 RTC_SAMD51 rtc;
 
@@ -216,11 +218,33 @@ static const Cue *cue = nullptr;
 static uint32_t cueStart = 0;
 static uint32_t cueStep = 0;
 
-static void stopSound() {
+// The Moon Patrol bass line from the user's MIDI (src/theme.h) loops in
+// games and autoplay while sound is on. It keeps its own clock; an effect
+// cue takes the buzzer and the music comes back in on the beat.
+static bool musicWanted = false;
+static bool musicSounding = false;
+static uint16_t musicIdx = 0;
+static uint32_t musicNoteStart = 0;
+static const uint16_t THEME_LEN = sizeof(THEME) / sizeof(THEME[0]);
+static const uint8_t MUSIC_GAP_MS = 20;  // a breath between notes
+
+static void silence() {
   // The core's noTone() waits on the tone timer, whose clock is only
   // enabled by the first tone(). Calling it earlier hangs the board.
   if (toneStarted) noTone(WIO_BUZZER);
+  musicSounding = false;
+}
+
+static void stopSound() {
+  silence();
   cue = nullptr;
+}
+
+static void restartMusic(bool on) {
+  musicWanted = on;
+  musicIdx = 0;
+  musicNoteStart = millis();
+  if (!cue) silence();
 }
 
 static void startTone(uint32_t f) {
@@ -239,11 +263,37 @@ static void playCue(const Cue &c) {
   if (!soundOn) return;
   if (cue && cue->priority > c.priority) return;
   cue = &c;
+  musicSounding = false;
   cueStart = millis();
   cueStep = 0;
 }
 
-static void soundUpdate() {
+static void musicUpdate() {
+  if (!soundOn || !musicWanted) {
+    if (musicSounding) silence();
+    return;
+  }
+  uint32_t now = millis();
+  bool newNote = false;
+  while (now - musicNoteStart >= THEME[musicIdx][1] * THEME_STEP_MS) {
+    musicNoteStart += THEME[musicIdx][1] * THEME_STEP_MS;
+    musicIdx = (musicIdx + 1) % THEME_LEN;
+    newNote = true;
+  }
+  if (cue) return;
+  uint8_t note = THEME[musicIdx][0];
+  uint32_t len = THEME[musicIdx][1] * THEME_STEP_MS;
+  bool on = note && now - musicNoteStart < len - MUSIC_GAP_MS;
+  if (on && (!musicSounding || newNote)) {
+    tone(WIO_BUZZER, (uint32_t)(440.0f * powf(2.0f, (note - 69) / 12.0f) + 0.5f));
+    toneStarted = true;
+    musicSounding = true;
+  } else if (!on && musicSounding) {
+    silence();
+  }
+}
+
+static void cueUpdate() {
   if (!cue) return;
   uint32_t t = millis() - cueStart;
   if (t >= cue->ms) {
@@ -264,6 +314,11 @@ static void soundUpdate() {
     startTone(random(cue->f0, cue->f1 + 1));
     cueStep = t + 25;
   }
+}
+
+static void soundUpdate() {
+  cueUpdate();
+  musicUpdate();
 }
 
 // ---- Input -------------------------------------------------------------
@@ -850,6 +905,7 @@ static void startTitle(Mode next) {
     f.vy = (random(2) ? 1 : -1) * (0.5f + random(0, 10) / 10.0f);
   }
   stopSound();
+  restartMusic(false);
   fullRedraw = true;
   Serial.println("TITLE");
 }
@@ -863,6 +919,7 @@ static void startAuto(bool newRun) {
   fullRedraw = true;
   Serial.println("AUTO");
   setSound(false);
+  if (newRun) restartMusic(true);
   printScore();
 }
 
@@ -875,6 +932,7 @@ static void startGame() {
   fullRedraw = true;
   Serial.println("NEW");
   setSound(true);
+  restartMusic(true);
   printLives();
   printScore();
 }
@@ -882,6 +940,7 @@ static void startGame() {
 static void startGameOver() {
   mode = MODE_OVER;
   modeTimer = OVER_FRAMES;
+  restartMusic(false);
   Serial.println("GAME OVER");
   printScore();
   tft.setTextColor(PALETTE[C_HUD], PALETTE[C_SKY]);
@@ -1299,6 +1358,7 @@ void setup() {
   tft.setRotation(3);
   tft.setSwapBytes(true);
   resetField();
+  restartMusic(true);
   renderPlayfield();
   pushRows(0, PLAY_H);
   drawHud();

@@ -5,9 +5,9 @@ Read this file at the start of a session, then `git log` and `git status`.
 
 ## Status
 
-**M6 is next.** M0–M5 are done and committed, plus the user's additions (M4b: lives, title, attacker types, autoplay pace, three shots). Still unconfirmed by hand: the top middle (sound) button and the buzzer, and the extra life at 10,000. M6 is approved. Do not stop to ask permission to continue.
+**All milestones are done.** M0–M6 are committed, plus the user's additions (lives, title, attacker types, autoplay pace, three shots, theme music). Still unconfirmed by hand: the buzzer, music, and the top middle (sound) button by ear, and the extra life at 10,000.
 
-Latest commit is M5. The board is running that build with the clock set from the Mac.
+Latest commit is M6 with the theme music. The board is running it in autoplay, muted, with the clock set from the Mac.
 
 | Milestone | State |
 | --- | --- |
@@ -17,7 +17,7 @@ Latest commit is M5. The board is running that build with the clock set from the
 | M3 Scroll, move, holes, and jump | done |
 | M4 Shooting and score | done |
 | M5 Time and date in the game HUD | done |
-| M6 Desk-buddy pass | approved |
+| M6 Desk-buddy pass | done |
 
 Finish a milestone, record its test results, commit, then start the next one.
 
@@ -187,6 +187,7 @@ Approving M1–M6 approves these choices. Say so if one of them should change be
 - HUD, top to bottom, yellow on black: centered score; `MM-DD  TIME HH:MM` with a blinking colon; segmented course bar. Seconds are the blink, not extra digits.
 - Clock source is the Mac, sent as one line: `T2026-10-12 12:47:03`. Compile time is only a fallback before that line arrives.
 - Sound follows the 2600 video above and plays on `WIO_BUZZER`. Wi-Fi, NTP, and a saved high score stay out.
+- Theme music (user, 2026-10-12): the user supplied `~/Downloads/mpatrol.mid`. `tools/midi_to_theme.py` turns its track 1, the bass line, into `src/theme.h` (230 notes, 49.2 s, two octaves up for the piezo; track 2 is a hi-hat and is dropped). It loops in games and autoplay whenever sound is on, restarts with each new game, and is silent on the title and GAME OVER. Effect cues take the buzzer and the music comes back in on its beat. The MIDI file itself is not in the repo. This supersedes "no soundtrack rip" in the 2600 section for this one file the user provided.
 
 ## How to test
 
@@ -338,27 +339,28 @@ python3 tools/set_clock.py
 
 ## M6 — Desk-buddy pass
 
-**State:** approved
+**State:** done
 
-Left alone, the buddy boots in autoplay: the buggy jumps holes and shoots rocks and attackers. The top-left button starts a new game. Right and left change speed and position, up jumps, and a press shoots. Another press on that button returns to autoplay. Score climbs. The clock stays on the HUD.
+Left alone, the buddy boots in autoplay: the buggy jumps holes and shoots rocks and attackers. The top-left button starts a new game (through the title). Right and left change speed and position, up jumps, and a press shoots. Another press on that button returns to autoplay. Score climbs. The clock stays on the HUD.
 
-**Tests**
+**Tests** (2026-10-12)
 
-- [ ] `pio run` exits 0
-- [ ] Hands off after boot: serial shows `AUTO`, at least one `JUMP`, and at least one of `ROCK` or `ATTACKER`, and `SCORE` is higher at the end of one course bar
-- [ ] The top-left button prints `NEW` and the next `SCORE` line is 0
-- [ ] During that game, right and left print `POS` and `SPEED`, up prints `JUMP`, and a press prints `SHOT`
-- [ ] Leaving the 5-way idle during the game does not print `AUTO`
-- [ ] Pressing the top-left button again prints `AUTO`, and the following `SCORE` is not reset to 0
-- [ ] Screen still matches the reference layout, with a live score and a live `MM-DD  TIME HH:MM`
-- [ ] No lockup over that run
-- [ ] Results recorded in this section, then commit
+- [x] `pio run` exits 0. Flash 77760 bytes with the theme.
+- [x] Hands off, 4 minutes (`test-captures/m6-soak.log`): 41 `JUMP`, 44 `HOLE 100`, 42 `ROCK 100`, 15 `ATTACKER 200`, 3 crashes. A full course ran 16:48:48–16:51:25, then `TITLE` and a fresh `AUTO` run; the next run started again on schedule.
+- [x] The top-left button prints `TITLE`, then `NEW`, `LIVES 3`, `SCORE 0` (`test-captures/lives-title.log`).
+- [x] In a game, right/left print `POS`/`SPEED`, up prints `JUMP`, press prints `SHOT`: injected, and by hand on the real switch (`test-captures/remap-hands-on.log` before the last jump fix; the user confirmed after it).
+- [x] Idle in a game does not print `AUTO`; it loses lives instead (`lives-title.log`).
+- [x] The top-left button in a game prints `AUTO` and the score is kept (700 → 800 in `m4-serial-game.log`).
+- [x] Screen matches the reference layout with a live score and `10-12  TIME 16:46` (`test-captures/m5a.jpg`).
+- [x] No lockup: 4 minutes of autoplay through two title transitions, and a game with music, 20 shots, 3 crashes, GAME OVER, and the title (`test-captures/music.log`).
+- [ ] Buzzer, music, and the top middle (sound) button by ear, by the user.
+- [ ] Extra life at 10,000 seen on the device.
+- [x] Results recorded in this section, then commit
 
 ## Next session
 
 1. Read this file, then `git log` and `git status`.
-2. Ask the user for the hands-on check of the 5-way, the top-left (mode) and top middle (sound) buttons, and the buzzer, while logging serial. Then start M5.
-3. New art comes from the reference frame or the video, not drawn shapes. Crash debris is yellow and salmon checkers about the buggy's size (seen in the video).
-4. M3–M6 are approved. Continue through them without asking permission. Record each test and commit before the next one.
-5. Reconfirm the Wio port before flashing. Skip `/dev/cu.usbmodem21401`.
-6. For every screen check, capture from the C920 only (`imagesnap -d "HD Pro Webcam C920"`). Leave the JPEG in `test-captures/`. Run `imagesnap` and `tools/flash_uf2.py` from the user's Terminal panel: the agent shell is denied the camera and cannot write to `/Volumes/Arduino`. The C920 overexposes the panel in this room, so for shape checks also ask the user to look.
+2. Ask the user to listen: sound button (top middle), music, jump, shot, crash. Adjust cue pitches or the theme octave if the buzzer sounds wrong.
+3. After a power cut the clock falls back to the build time. Run `python3 tools/set_clock.py`.
+4. Reconfirm the Wio port before flashing. Skip `/dev/cu.usbmodem21401`. Close any serial logger before `tools/flash_uf2.py`, or the 1200-baud touch fails.
+5. For every screen check, capture from the C920 only (`imagesnap -d "HD Pro Webcam C920"`), run from the user's Terminal panel. Leave the JPEG in `test-captures/`.
