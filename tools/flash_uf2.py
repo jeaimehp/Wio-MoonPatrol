@@ -74,7 +74,15 @@ def main():
             return 1
     blob = open(BIN, "rb").read()
     path = os.path.join(VOLUME, "moonpatrol.uf2")
-    open(path, "wb").write(to_uf2(blob))
+    # The volume shows up a moment before macOS lets us write to it.
+    for attempt in range(15):
+        try:
+            open(path, "wb").write(to_uf2(blob))
+            break
+        except PermissionError:
+            if attempt == 14:
+                raise
+            time.sleep(0.4)
     print(f"wrote {path} ({len(blob)} bytes at {BASE:#x})")
     return 0
 

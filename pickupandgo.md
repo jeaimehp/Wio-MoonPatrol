@@ -5,17 +5,17 @@ Read this file at the start of a session, then `git log` and `git status`.
 
 ## Status
 
-**M3 is next.** M2 is done and committed: the still scene with the buggy, attackers, and rock cut from the reference frame. M3–M6 are approved. Do not stop between milestones to ask permission to continue.
+**M5 is next.** M3 and M4 landed together in one commit (the user widened M3 mid-way: moving attackers, bombs, readable HUD, sound toggle). Their tests passed on serial with injected input; the physical 5-way and buttons still need one hands-on check by the user. M5–M6 are approved. Do not stop between milestones to ask permission to continue.
 
-Latest commit is M2. The board is running the M2 still scene.
+Latest commit is M3+M4. The board is running that build.
 
 | Milestone | State |
 | --- | --- |
 | M0 Handoff and local repo | done |
 | M1 Toolchain and device link | done |
 | M2 Atari 2600 still scene | done |
-| M3 Scroll, move, holes, and jump | approved |
-| M4 Shooting and score | approved |
+| M3 Scroll, move, holes, and jump | done — physical switch check pending |
+| M4 Shooting and score | done — physical switch check pending |
 | M5 Time and date in the game HUD | approved |
 | M6 Desk-buddy pass | approved |
 
@@ -175,7 +175,10 @@ Approving M1–M6 approves these choices. Say so if one of them should change be
 - The top-left button, the upper button on the left edge in this pose, changes mode. From autoplay it starts a new game: score returns to 0, the field resets, and the 5-way is live. From a game it returns to autoplay and keeps the score. It does not matter that the 5-way has been idle. Expected pin `WIO_KEY_C`.
 - Right moves the buggy right and scrolls the ground faster. Left moves the buggy left and scrolls the ground slower. Releasing left or right leaves the buggy where it is and leaves the speed where it is.
 - Up jumps. Press shoots a ground bullet and an air bullet. Only one of each is in flight.
-- Rock destroyed: 100 points. Attacker destroyed: 200 points. A crash does not clear the score.
+- Rock destroyed: 100 points. Attacker destroyed: 200 points. Clearing a hole: 100 points (user, 2026-10-12; every score change in the 2600 video is +100, the first one on a cleared hole). A crash does not clear the score.
+- Attackers drop bombs straight down (salmon 2×6 dashes, as in the video). A bomb on the buggy crashes it; one landing well ahead can open a small crater.
+- Sound is off in autoplay by default, on when a new game starts, and the top middle button (`WIO_KEY_B`) toggles it any time. Serial prints `SOUND ON` / `SOUND OFF`.
+- HUD text is the 8×8 font at 2× (user asked for readable text); score at y 181, date/time at y 200, course bar at y 222. The reference's 5–7 px lines were too small on the desk.
 - The buddy boots in autoplay: cruise speed, buggy toward the left, jumps holes, and shoots threats. A new game stays a new game until the top-left button is pressed again.
 - HUD, top to bottom, yellow on black: centered score; `MM-DD  TIME HH:MM` with a blinking colon; segmented course bar. Seconds are the blink, not extra digits.
 - Clock source is the Mac, sent as one line: `T2026-10-12 12:47:03`. Compile time is only a fallback before that line arrives.
@@ -190,7 +193,9 @@ Every code milestone has a compile test and a device test. A milestone stays ope
 - Serial: `pio device monitor --port /dev/cu.usbmodem124301 --baud 115200`. Firmware lines that tests look for are listed on each milestone.
 - Screen: capture a frame with the C920 command in the Camera section, then judge the milestone boxes from that frame. A screen box is passed only when the frame shows it.
 
-Firmware should print `READY` after boot, then event lines such as `AUTO`, `NEW`, `JUMP`, `POS n`, `SPEED n`, `SHOT`, `CRASH`, `RECOVER`, `ROCK 100`, `ATTACKER 200`, `SCORE n`, and `NOW YYYY-MM-DD HH:MM:SS`.
+Firmware should print `READY` after boot, then event lines such as `AUTO`, `NEW`, `JUMP`, `POS n`, `SPEED n`, `SHOT`, `CRASH`, `RECOVER`, `ROCK 100`, `ROCK HIT`, `ATTACKER 200`, `HOLE 100`, `SCORE n`, `SOUND ON`/`SOUND OFF`, `FPS n`, and `NOW YYYY-MM-DD HH:MM:SS`.
+
+Serial input for tests: a line `I` followed by letters injects controls, the same as the hardware: `R`/`L` hold right/left for 10 frames, `U` jumps, `P` presses, `C` is the mode button, `S` the sound button. For example `IC` starts a new game. Results from injected input must say so; the physical switch is still checked by hand.
 
 ## Git
 
@@ -251,36 +256,44 @@ The layout is on the device and nothing moves yet. `setRotation(3)` puts the yel
 
 ## M3 — Scroll, move, holes, and jump
 
-**State:** approved
+**State:** done, physical switch check pending
 
 The ground scrolls. With the power port at the bottom, 5-way right moves the buggy right and speeds the scroll up. 5-way left moves it left and slows the scroll down. 5-way up jumps. Holes open in the green, small and large. Autoplay jumps them while the switch is idle. Landing in a hole crashes, the scroll pauses, the buggy recovers, and the score is unchanged.
 
-**Tests**
+Built as an 8-bit indexed framebuffer for rows 0–176 with the reference palette, pushed row by row; only the driving band (rows 112–176) and the sky rows under moving things are pushed each frame. Serial reports `FPS 30`. Hole shape and crash debris are traced from the 1080p video; the jump is the video's 10 px, 1.4 s arc. Attackers started moving here at the user's request (M4 had them).
 
-- [ ] `pio run` exits 0
-- [ ] Pushing the switch to the player's right prints a higher `POS` and a higher `SPEED` than pushing it left, and the frame shows the buggy move right, then left
-- [ ] 5-way up, toward the edge opposite the power port, prints `JUMP`, and the frame shows the buggy clearing a hole
-- [ ] With the 5-way idle, serial shows `JUMP` before a hole and the frame shows the buggy clearing it
-- [ ] Landing in a hole prints `CRASH` then `RECOVER`, and the scene is moving again
-- [ ] `SCORE` after recover equals `SCORE` before the crash
-- [ ] Results recorded in this section, then commit
+**Tests** (2026-10-12)
+
+- [x] `pio run` exits 0. RAM 66 KB, flash 58–66 KB.
+- [x] Right then left prints higher then lower `POS`/`SPEED`: `POS 109 → 168`, `SPEED 78 → 106`, then back to `POS 135`, `SPEED 90`. Injected input (`IR`, `IL`). Physical switch not yet confirmed; the C920 frames do not show the move.
+- [x] Up prints `JUMP` (injected `IU`). C920 `test-captures/m3a.jpg` shows the buggy in the air over a hole.
+- [x] Idle: 8 `JUMP`s and no `CRASH` in 25 s of autoplay; `HOLE 100` follows each.
+- [x] Landing in a hole prints `CRASH` then `RECOVER` and the scene moves again (`test-captures/m3-switch.log`, `m4-serial-game.log`).
+- [x] `SCORE` after `RECOVER` equals `SCORE` before `CRASH` (900/900 in autoplay, 300/300 and 700/700 in a game).
+- [x] HUD text 2×, readable in `test-captures/m3a.jpg`.
+- [ ] Physical 5-way right/left/up and the top-left button, by the user.
+- [x] Results recorded in this section, then commit (with M4).
 
 ## M4 — Shooting and score
 
-**State:** approved
+**State:** done, physical switch check pending
 
-Ground shots remove rocks. Air shots remove attackers. The yellow score matches the serial score.
+Ground shots remove rocks. Air shots remove attackers. The yellow score matches the serial score. Attackers bomb the buggy. Clearing a hole scores 100. Autoplay shoots rocks ahead and attackers overhead. Rocks: the reference rock is one shot; a 16×8 boulder (the same shape grown) takes two and prints `ROCK HIT` on the first. Destroyed rocks flash yellow; destroyed attackers break into a checkerboard.
 
-**Tests**
+The board hung once: the core's `noTone()` waits on timer TC0, whose clock is only enabled by the first `tone()`. Muting before any sound had played froze the loop. `stopSound()` now skips `noTone()` until a tone has started.
 
-- [ ] `pio run` exits 0
-- [ ] 5-way press prints `SHOT`. Only one ground bullet and one air bullet exist at a time
-- [ ] Destroying a one-shot rock prints `ROCK 100` and increases `SCORE` by 100
-- [ ] A two-shot rock is still there after one `SHOT` and prints `ROCK 100` only on the second hit
-- [ ] Destroying an attacker prints `ATTACKER 200` and increases `SCORE` by 200
-- [ ] The centered HUD number matches the latest `SCORE` line (screen check)
-- [ ] A crash still does not clear the score
-- [ ] Results recorded in this section, then commit
+**Tests** (2026-10-12)
+
+- [x] `pio run` exits 0. Flash 65784 bytes.
+- [x] Press prints `SHOT`; six injected presses inside 0.5 s gave one `SHOT` (one of each in flight).
+- [x] One-shot rock: `ROCK 100`, `SCORE` +100.
+- [x] Two-shot rock: `ROCK HIT` on the first shot, `ROCK 100` on the second.
+- [x] Attacker: `ATTACKER 200`, `SCORE` +200 (autoplay and injected game).
+- [x] HUD matches serial: C920 `test-captures/m4a.jpg` at 16:08:08 shows `1700`; serial printed `SCORE 1700` at 16:08:08.
+- [x] A crash does not clear the score (bomb and hole crashes, 300/300 and 700/700).
+- [x] Sound: autoplay boots `SOUND OFF`, `NEW` turns it on, `AUTO` turns it off, the sound button toggles (injected `IS`). Buzzer not yet confirmed by ear.
+- [ ] Physical press and the top middle button, by the user.
+- [x] Results recorded in this section, then commit (with M3).
 
 ## M5 — Time and date in the game HUD
 
@@ -319,7 +332,7 @@ Left alone, the buddy boots in autoplay: the buggy jumps holes and shoots rocks 
 ## Next session
 
 1. Read this file, then `git log` and `git status`.
-2. Start M3. Use the buggy frames `BUGGY_RUN_A`/`BUGGY_RUN_B` while driving and `BUGGY_JUMP` in the air, and the cue table under "What the video shows" for the buzzer.
+2. Ask the user for the hands-on check of the 5-way, the top-left (mode) and top middle (sound) buttons, and the buzzer, while logging serial. Then start M5.
 3. New art comes from the reference frame or the video, not drawn shapes. Crash debris is yellow and salmon checkers about the buggy's size (seen in the video).
 4. M3–M6 are approved. Continue through them without asking permission. Record each test and commit before the next one.
 5. Reconfirm the Wio port before flashing. Skip `/dev/cu.usbmodem21401`.
