@@ -18,9 +18,13 @@ These are read back pixel by pixel from the Wio's display over USB (`tools/scree
 | [![In a game](docs/screens/2x/game.png)](docs/screens/game.png) **In a game.** The logo gives way to the 2600's lives slot: the lives icon and how many are left. | [![Crash](docs/screens/2x/crash.png)](docs/screens/crash.png) **Crash.** The buggy breaks apart in a crater and a life is gone. |
 | [![Later waves](docs/screens/2x/later-waves.png)](docs/screens/later-waves.png) **Later waves.** A saucer, one of the tougher types that join past 3,000 points, with shots flying up and a rock flashing as it's destroyed. | [![Game over](docs/screens/2x/game-over.png)](docs/screens/game-over.png) **Game over.** Then the title, then back to autoplay. |
 
-The look is matched to a frame of the Atari 2600 game, kept in [`reference/atari-2600.png`](reference/atari-2600.png):
+The look is matched to a frame of the Atari 2600 game, kept in [`reference/atari-2600.png`](reference/atari-2600.png). Here it is next to the original 1983 cartridge:
 
-<p align="center"><img src="docs/screens/2x/reference.png" alt="Atari 2600 Moon Patrol reference frame" width="480"></p>
+<p align="center">
+  <img src="docs/screens/2x/reference.png" alt="Atari 2600 Moon Patrol reference frame" width="400">
+  &nbsp;
+  <img src="docs/cartridge.png" alt="Atari 2600 Moon Patrol cartridge, 1983" width="246">
+</p>
 
 ## How to play
 
@@ -92,6 +96,7 @@ The full build log, with each milestone's tests and the decisions behind them, i
 
 - **Hardware:** [Seeed Studio Wio Terminal](https://www.seeedstudio.com/Wio-Terminal-p-4509.html)
 - **Look, motion, and sound effects:** [Moon Patrol - Atari 2600 (1080p@60fps)](https://www.youtube.com/watch?v=vGFMsMGQNuo) by Gen X Classic Gaming. The title screen, sprite shapes, crater and debris shapes, jump arc, scoring, and the pitch of each sound effect were measured from this video.
+- **Cartridge:** photo of the original Atari 2600 Moon Patrol cartridge (Atari, 1983), supplied by the project owner.
 - **Reference frame:** a 320×240 Atari 2600 frame, [`reference/atari-2600.png`](reference/atari-2600.png), the source of the palette, buggy, attacker, rock, hill, stars, and HUD layout.
 - **Game rules:** [NiccoloBalestrieri/MoonPatrol](https://github.com/NiccoloBalestrieri/MoonPatrol), a 2019 University of Parma Python version. Its rules were reimplemented here; none of its code or art is used.
 - **Arcade behavior:** [Computer Archeology: Moon Patrol](https://computerarcheology.com/Arcade/MoonPatrol/), used for how the arcade buggy, attract mode, and craters behave.
@@ -99,7 +104,7 @@ The full build log, with each milestone's tests and the decisions behind them, i
 - **Library:** Seeed_Arduino_LCD, bundled with the Seeed SAMD board package.
 - [General Sprites from The Spriters Resource](https://www.spriters-resource.com/arcade/moonpatrol/asset/106392/) was considered for the buggy but could not be downloaded, so the 2600 sprites were used instead.
 
-Moon Patrol is © 1982 Irem; the Atari 2600 version is © 1983 Atari. This is a personal fan project, not affiliated with or endorsed by either.
+Moon Patrol was created by Irem (1982) and published in US arcades by Williams; the cartridge reads "Trademark and © Williams 1982". The Atari 2600 version is © 1983 Atari, Inc. This is a personal fan project, not affiliated with or endorsed by any of them.
 
 ## Collaborators
 
