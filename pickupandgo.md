@@ -86,7 +86,7 @@ Seeed Wio Terminal, ATSAMD51P19 (the SAMD51 board this project calls the D51). C
 | Vendor / product | Seeed Studio, idVendor 10374 (0x2886), idProduct 32813 (0x802D) |
 | MCU | ATSAMD51P19, Cortex-M4F, 120 MHz, 512 KB flash, 192 KB RAM, 4 MB external flash |
 | Display | 2.4 inch, 320×240, ILI9341 |
-| Input | Three top buttons `WIO_KEY_A` / `WIO_KEY_B` / `WIO_KEY_C`. The blue 5-way switch on the right of the bezel is the control meant by "joystick": `WIO_5S_UP` `DOWN` `LEFT` `RIGHT` `PRESS`. No separate joystick is attached. |
+| Input | Three buttons on the edge that is on the left when the power port is at the bottom. The top one of those is the mode button, expected pin `WIO_KEY_C` (Seeed's rightmost top button when the USB-C is on the left). `WIO_KEY_A` and `WIO_KEY_B` are unused. The blue 5-way switch is the play control. |
 | Also on the board | Buzzer `WIO_BUZZER`, backlight `LCD_BACKLIGHT`, LIS3DH, light sensor, microphone, microSD, RTL8720DN Wi-Fi/BLE |
 
 `/dev/cu.usbmodem21401` is a Particle Xenon on the same computer. Do not flash it.
@@ -124,11 +124,12 @@ Approving M1–M6 approves these choices. Say so if one of them should change be
 
 - Draw on a 2-pixel grid so the scene stays chunky like the 2600. One blue hill, not the arcade’s two ranges.
 - The terminal sits horizontally with the power port at the bottom. Screen-right is the player's right. The yellow HUD sits toward the power port. Seeed's pin names assume the USB-C is on the left, so this pose is that view turned clockwise until the USB-C is down.
-- Play uses the onboard 5-way switch only. In this pose: right is `WIO_5S_DOWN`, left is `WIO_5S_UP`, up is `WIO_5S_RIGHT`, down is `WIO_5S_LEFT` and unused, press is `WIO_5S_PRESS`.
+- Play uses the onboard 5-way switch. In this pose: right is `WIO_5S_DOWN`, left is `WIO_5S_UP`, up is `WIO_5S_RIGHT`, down is `WIO_5S_LEFT` and unused, press is `WIO_5S_PRESS`.
+- The top-left button, the upper button on the left edge in this pose, changes mode. From autoplay it starts a new game: score returns to 0, the field resets, and the 5-way is live. From a game it returns to autoplay and keeps the score. It does not matter that the 5-way has been idle. Expected pin `WIO_KEY_C`.
 - Right moves the buggy right and scrolls the ground faster. Left moves the buggy left and scrolls the ground slower. Releasing left or right leaves the buggy where it is and leaves the speed where it is.
 - Up jumps. Press shoots a ground bullet and an air bullet. Only one of each is in flight.
 - Rock destroyed: 100 points. Attacker destroyed: 200 points. A crash does not clear the score.
-- Autoplay runs when the 5-way has been idle for about 3 seconds: cruise speed, buggy toward the left, jumps holes, and shoots threats. Any direction or a press takes over that action immediately. Autoplay does not jump, steer, or shoot while the player is using the switch.
+- The buddy boots in autoplay: cruise speed, buggy toward the left, jumps holes, and shoots threats. A new game stays a new game until the top-left button is pressed again.
 - HUD, top to bottom, yellow on black: centered score; `MM-DD  TIME HH:MM` with a blinking colon; segmented course bar. Seconds are the blink, not extra digits.
 - Clock source is the Mac, sent as one line: `T2026-10-12 12:47:03`. Compile time is only a fallback before that line arrives.
 - Sound, Wi-Fi, NTP, saved high score, lives, and game over are outside this plan.
@@ -142,7 +143,7 @@ Every code milestone has a compile test and a device test. A milestone stays ope
 - Serial: `pio device monitor --port /dev/cu.usbmodem124301 --baud 115200`. Firmware lines that tests look for are listed on each milestone.
 - Screen: capture a frame with the C920 command in the Camera section, then judge the milestone boxes from that frame. A screen box is passed only when the frame shows it.
 
-Firmware should print `READY` after boot, then event lines such as `JUMP`, `POS n`, `SPEED n`, `SHOT`, `CRASH`, `RECOVER`, `ROCK 100`, `ATTACKER 200`, `SCORE n`, and `NOW YYYY-MM-DD HH:MM:SS`.
+Firmware should print `READY` after boot, then event lines such as `AUTO`, `NEW`, `JUMP`, `POS n`, `SPEED n`, `SHOT`, `CRASH`, `RECOVER`, `ROCK 100`, `ATTACKER 200`, `SCORE n`, and `NOW YYYY-MM-DD HH:MM:SS`.
 
 ## Git
 
@@ -247,13 +248,16 @@ The second HUD line shows the date in the lives slot and the clock in the TIME s
 
 **State:** proposed
 
-Left alone, the buggy jumps holes and shoots rocks and attackers. Right and left change speed and position, up jumps, and a press shoots. Score climbs. The clock stays on the HUD.
+Left alone, the buddy boots in autoplay: the buggy jumps holes and shoots rocks and attackers. The top-left button starts a new game. Right and left change speed and position, up jumps, and a press shoots. Another press on that button returns to autoplay. Score climbs. The clock stays on the HUD.
 
 **Tests**
 
 - [ ] `pio run` exits 0
-- [ ] Hands off for one full course bar: serial shows at least one `JUMP` and at least one of `ROCK` or `ATTACKER`, and `SCORE` is higher at the end
-- [ ] During a later pass, right and left print `POS` and `SPEED`, up prints `JUMP`, and a press prints `SHOT`
+- [ ] Hands off after boot: serial shows `AUTO`, at least one `JUMP`, and at least one of `ROCK` or `ATTACKER`, and `SCORE` is higher at the end of one course bar
+- [ ] The top-left button prints `NEW` and the next `SCORE` line is 0
+- [ ] During that game, right and left print `POS` and `SPEED`, up prints `JUMP`, and a press prints `SHOT`
+- [ ] Leaving the 5-way idle during the game does not print `AUTO`
+- [ ] Pressing the top-left button again prints `AUTO`, and the following `SCORE` is not reset to 0
 - [ ] Screen still matches the reference layout, with a live score and a live `MM-DD  TIME HH:MM`
 - [ ] No lockup over that run
 - [ ] Results recorded in this section, then commit
