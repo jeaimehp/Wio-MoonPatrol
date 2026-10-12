@@ -3,10 +3,12 @@
 A desk buddy that plays **Moon Patrol** in the style of the Atari 2600 version on a [Seeed Studio Wio Terminal](https://www.seeedstudio.com/Wio-Terminal-p-4509.html). Left alone, it drives itself: the buggy jumps craters, shoots rocks and attackers, and the score climbs under the MOON PATROL logo. Press the top-left button and it's your game: three lives, extra lives every 10,000 points, and attackers that get tougher as you go.
 
 <p align="center">
-  <img src="docs/device.jpg" alt="The Wio Terminal on a desk running Moon Patrol" width="480">
+  <img src="docs/device.jpg" alt="The Wio Terminal running Moon Patrol in hand" width="440">
+  &nbsp;
+  <img src="docs/stand.jpg" alt="The Wio Terminal running Moon Patrol in a 3D-printed stand" width="300">
 </p>
 
-<sub>The Wio Terminal running autoplay. The screenshots below are read pixel by pixel straight off the display.</sub>
+<sub>The Wio Terminal running autoplay, in hand and on the desk in a [3D-printed stand from Thingiverse](https://www.thingiverse.com/thing:5378332). The screenshots below are read pixel by pixel straight off the display.</sub>
 
 ## Screenshots
 
@@ -95,6 +97,7 @@ The full build log, with each milestone's tests and the decisions behind them, i
 ## Sources and references
 
 - **Hardware:** [Seeed Studio Wio Terminal](https://www.seeedstudio.com/Wio-Terminal-p-4509.html)
+- **Stand:** [Wio Terminal stand on Thingiverse](https://www.thingiverse.com/thing:5378332), 3D printed
 - **Look, motion, and sound effects:** [Moon Patrol - Atari 2600 (1080p@60fps)](https://www.youtube.com/watch?v=vGFMsMGQNuo) by Gen X Classic Gaming. The title screen, sprite shapes, crater and debris shapes, jump arc, scoring, and the pitch of each sound effect were measured from this video.
 - **Cartridge:** photo of the original Atari 2600 Moon Patrol cartridge (Atari, 1983), supplied by the project owner.
 - **Reference frame:** a 320×240 Atari 2600 frame, [`reference/atari-2600.png`](reference/atari-2600.png), the source of the palette, buggy, attacker, rock, hill, stars, and HUD layout.
