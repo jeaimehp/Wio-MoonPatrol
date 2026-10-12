@@ -5,19 +5,19 @@ Read this file at the start of a session, then `git log` and `git status`.
 
 ## Status
 
-**Awaiting approval of milestones M1–M6.** Do not write firmware, install PlatformIO, or flash the board until that list is approved.
+**M1–M6 are approved.** M1 is in progress: the firmware builds, and the upload has not finished.
 
 | Milestone | State |
 | --- | --- |
-| M0 Handoff and local repo | done in this commit |
-| M1 Toolchain and device link | proposed |
-| M2 Atari 2600 still scene | proposed |
-| M3 Scroll, move, holes, and jump | proposed |
-| M4 Shooting and score | proposed |
-| M5 Time and date in the game HUD | proposed |
-| M6 Desk-buddy pass | proposed |
+| M0 Handoff and local repo | done |
+| M1 Toolchain and device link | in progress |
+| M2 Atari 2600 still scene | approved |
+| M3 Scroll, move, holes, and jump | approved |
+| M4 Shooting and score | approved |
+| M5 Time and date in the game HUD | approved |
+| M6 Desk-buddy pass | approved |
 
-On approval, start M1 only. Finish a milestone, record its test results under that milestone, commit, then start the next one. Update the table above in the same commit.
+Finish M1 before M2. Record test results under the milestone, commit, then start the next one.
 
 ## What this is
 
@@ -93,7 +93,7 @@ Seeed Wio Terminal, ATSAMD51P19 (the SAMD51 board this project calls the D51). C
 
 The SAMD51 clock resets when USB power drops. There is no battery-backed RTC. M5 sets the clock from this Mac over serial.
 
-PlatformIO is not installed yet. M1 installs it. Board id `seeed_wio_terminal`, platform `atmelsam`, framework `arduino`. Display library `seeed-studio/Seeed_Arduino_LCD`. Clock library `seeed-studio/Seeed Arduino RTC`.
+PlatformIO 6.2.0 is installed (`python3 -m platformio`). Board id `seeed_wio_terminal`, platform `atmelsam`, framework `arduino`. The display library is Seeed_Arduino_LCD 1.6.0 from that board package. Do not add registry `Seeed_Arduino_LCD` 2.0.3; that release targets XIAO boards and does not build for this terminal. Clock library for M5: `seeed-studio/Seeed Arduino RTC`.
 
 ## Camera
 
@@ -166,21 +166,23 @@ The repo was empty. This commit is the plan, the reference image, and the ignore
 
 ## M1 — Toolchain and device link
 
-**State:** proposed
+**State:** in progress
 
 A PlatformIO project builds and flashes. The panel lights, the screen is black, and serial prints `READY`. No playfield yet.
 
-**Tests**
+**Tests** (2026-10-12)
 
-- [ ] `pio run` exits 0
-- [ ] Upload to the Wio port exits 0
+- [x] `python3 -m platformio run` exits 0. Seeed_Arduino_LCD 1.6.0. RAM 4000 bytes, flash 48976 bytes.
+- [ ] Upload to the Wio port exits 0. Failed: 1200 baud reset on `/dev/cu.usbmodem124301`, then `SAM-BA operation failed` at 0 of 96 pages. The Wio then left the USB bus. Do not use `/dev/cu.usbmodem21401`.
 - [ ] Serial shows `READY`
-- [ ] Backlight is on and the screen is black
+- [ ] Backlight is on and the screen is black. A C920 frame after the failed upload shows the panel dark, with the room reflected in it, so the backlight is not confirmed on.
 - [ ] Results recorded in this section, then commit
+
+To resume: power-cycle the terminal, or double-click the reset button beside the power switch, until `ioreg` shows a Seeed Wio Terminal again. Then `python3 -m platformio run -t upload --upload-port <that port>`.
 
 ## M2 — Atari 2600 still scene
 
-**State:** proposed
+**State:** approved
 
 A static frame matches the reference layout. Nothing moves yet.
 
@@ -197,7 +199,7 @@ A static frame matches the reference layout. Nothing moves yet.
 
 ## M3 — Scroll, move, holes, and jump
 
-**State:** proposed
+**State:** approved
 
 The ground scrolls. With the power port at the bottom, 5-way right moves the buggy right and speeds the scroll up. 5-way left moves it left and slows the scroll down. 5-way up jumps. Holes open in the green, small and large. Autoplay jumps them while the switch is idle. Landing in a hole crashes, the scroll pauses, the buggy recovers, and the score is unchanged.
 
@@ -213,7 +215,7 @@ The ground scrolls. With the power port at the bottom, 5-way right moves the bug
 
 ## M4 — Shooting and score
 
-**State:** proposed
+**State:** approved
 
 Ground shots remove rocks. Air shots remove attackers. The yellow score matches the serial score.
 
@@ -230,7 +232,7 @@ Ground shots remove rocks. Air shots remove attackers. The yellow score matches 
 
 ## M5 — Time and date in the game HUD
 
-**State:** proposed
+**State:** approved
 
 The second HUD line shows the date in the lives slot and the clock in the TIME slot. A small host script sets the SAMD51 clock from the Mac.
 
@@ -246,7 +248,7 @@ The second HUD line shows the date in the lives slot and the clock in the TIME s
 
 ## M6 — Desk-buddy pass
 
-**State:** proposed
+**State:** approved
 
 Left alone, the buddy boots in autoplay: the buggy jumps holes and shoots rocks and attackers. The top-left button starts a new game. Right and left change speed and position, up jumps, and a press shoots. Another press on that button returns to autoplay. Score climbs. The clock stays on the HUD.
 
@@ -265,7 +267,7 @@ Left alone, the buddy boots in autoplay: the buggy jumps holes and shoots rocks 
 ## Next session
 
 1. Read this file.
-2. If M1–M6 are still `proposed`, stop and wait for approval.
+2. M1–M6 are approved. Do the first milestone that is not `done`. M1 is in progress until the upload, `READY`, and backlight checks pass.
 3. If they are approved, do the first milestone that is not `done`.
 4. Reconfirm the Wio port before flashing. Skip `/dev/cu.usbmodem21401`.
 5. For every screen check, capture from the C920 only (`imagesnap -d "HD Pro Webcam C920"`). Leave the JPEG in `test-captures/`.
