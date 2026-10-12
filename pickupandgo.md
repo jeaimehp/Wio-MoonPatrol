@@ -57,6 +57,24 @@ Leave out their ground monster, the 30-second countdown, the win and lose alerts
 
 Their `MoonPatrolTest.py` is the checklist for the rules: move changes position, a jump rises, a bullet removes a one-shot rock, a two-shot rock takes two hits, an attacker dies on a bullet. On the device, serial lines and a C920 frame stand in for that file.
 
+## Arcade notes
+
+[Computer Archeology: Moon Patrol](https://computerarcheology.com/Arcade/MoonPatrol/) is the arcade ROM write-up. Use it for behavior. Do not copy its disassembly, tile ROMs, or PROM color sets into this repo. The pixels stay the 2600 frame in `reference/atari-2600.png`.
+
+Facts that match this plan:
+
+- The buggy is one object with states: running, start jump, in the air, landing, and crashing in a crater. Wheels alternate two frames while it moves.
+- Attract mode injects inputs, including a jump, and plays the scene by itself. That is the model for autoplay.
+- A bubble-ship shot that hits the ground opens a crater.
+- Rocks and boulders share one ground path, and each has an exploding version.
+
+Facts we do not copy:
+
+- The arcade keeps one forward shot and up to four air shots. This plan still fires one of each per click.
+- Attract mode does not add to the score. This buddy does. Autoplay score stays on the HUD.
+- Arcade score pops read 300, 500, 800, and 1000, and the stored score is six digits. This plan still uses +100 for a rock and +200 for an attacker.
+- The arcade draws two scrolling mountain layers and a course letter above the playfield. This plan keeps one blue hill and the 2600 bottom HUD.
+
 ## Hardware
 
 Seeed Wio Terminal, ATSAMD51P19 (the SAMD51 board this project calls the D51). Confirmed on USB at the time of M0.
@@ -227,7 +245,7 @@ The second HUD line shows the date in the lives slot and the clock in the TIME s
 
 **State:** proposed
 
-Left alone, the buggy jumps holes and shoots rocks and attackers. Taking the stick sets the speed, and a click shoots. Score climbs. The clock stays on the HUD.
+Left alone, the buggy jumps holes and shoots rocks and attackers. Taking the stick moves the buggy, and a click shoots. Score climbs. The clock stays on the HUD.
 
 **Tests**
 
