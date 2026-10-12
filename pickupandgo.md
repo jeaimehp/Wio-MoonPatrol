@@ -51,7 +51,7 @@ Reimplement these rules on the Wio:
 - Holes come in a small and a large size. Rocks come in a one-shot size and a two-shot size. Both scroll with the ground.
 - Up to three flying attackers. They reverse at the screen edges and sometimes drop a bomb. A bomb that reaches the ground can open a hole.
 - A click fires one ground bullet and one air bullet, same as `Rover.attack`.
-- Gravity pulls the buggy down after a jump. Autoplay calls that jump. Their keyboard uses ArrowUp for it. This buddy does not.
+- Gravity pulls the buggy down after a jump. On this buddy, 5-way up jumps. Autoplay jumps on its own when the switch is idle.
 
 Leave out their ground monster, the 30-second countdown, the win and lose alerts, and scoring only by survival time. Destroying a rock is still +100. Destroying an attacker is still +200. A crash still recovers and keeps the score.
 
@@ -123,12 +123,12 @@ imagesnap -d "HD Pro Webcam C920" -w 2.0 test-captures/<milestone>.jpg
 Approving M1–M6 approves these choices. Say so if one of them should change before M1.
 
 - Draw on a 2-pixel grid so the scene stays chunky like the 2600. One blue hill, not the arcade’s two ranges.
-- Play uses the onboard 5-way switch only. Up is toward the top edge of the terminal. Down is toward the bottom edge. Press is the click. Left and right are unused.
-- The ground scrolls left at a steady pace. 5-way up moves the buggy forward (right). 5-way down moves it back (left). It stays on screen.
-- 5-way press shoots. A shot fires a ground bullet and an air bullet. Only one of each is in flight.
-- Jump is automatic in autoplay and while the player is driving, so holes are still cleared. Click does not jump. Their Python code jumps on ArrowUp. This plan does not.
+- The terminal sits horizontally with the power port at the bottom. Screen-right is the player's right. The yellow HUD sits toward the power port. Seeed's pin names assume the USB-C is on the left, so this pose is that view turned clockwise until the USB-C is down.
+- Play uses the onboard 5-way switch only. In this pose: right is `WIO_5S_DOWN`, left is `WIO_5S_UP`, up is `WIO_5S_RIGHT`, down is `WIO_5S_LEFT` and unused, press is `WIO_5S_PRESS`.
+- Right moves the buggy right and scrolls the ground faster. Left moves the buggy left and scrolls the ground slower. Releasing left or right leaves the buggy where it is and leaves the speed where it is.
+- Up jumps. Press shoots a ground bullet and an air bullet. Only one of each is in flight.
 - Rock destroyed: 100 points. Attacker destroyed: 200 points. A crash does not clear the score.
-- Autoplay runs when the 5-way has been idle for about 3 seconds: it holds the buggy on the left, jumps holes, and shoots threats. Pushing up or down takes over movement immediately. A press takes over shooting immediately. Auto-jump keeps running during play.
+- Autoplay runs when the 5-way has been idle for about 3 seconds: cruise speed, buggy toward the left, jumps holes, and shoots threats. Any direction or a press takes over that action immediately. Autoplay does not jump, steer, or shoot while the player is using the switch.
 - HUD, top to bottom, yellow on black: centered score; `MM-DD  TIME HH:MM` with a blinking colon; segmented course bar. Seconds are the blink, not extra digits.
 - Clock source is the Mac, sent as one line: `T2026-10-12 12:47:03`. Compile time is only a fallback before that line arrives.
 - Sound, Wi-Fi, NTP, saved high score, lives, and game over are outside this plan.
@@ -142,7 +142,7 @@ Every code milestone has a compile test and a device test. A milestone stays ope
 - Serial: `pio device monitor --port /dev/cu.usbmodem124301 --baud 115200`. Firmware lines that tests look for are listed on each milestone.
 - Screen: capture a frame with the C920 command in the Camera section, then judge the milestone boxes from that frame. A screen box is passed only when the frame shows it.
 
-Firmware should print `READY` after boot, then event lines such as `JUMP`, `POS n`, `SHOT`, `CRASH`, `RECOVER`, `ROCK 100`, `ATTACKER 200`, `SCORE n`, and `NOW YYYY-MM-DD HH:MM:SS`.
+Firmware should print `READY` after boot, then event lines such as `JUMP`, `POS n`, `SPEED n`, `SHOT`, `CRASH`, `RECOVER`, `ROCK 100`, `ATTACKER 200`, `SCORE n`, and `NOW YYYY-MM-DD HH:MM:SS`.
 
 ## Git
 
@@ -198,12 +198,13 @@ A static frame matches the reference layout. Nothing moves yet.
 
 **State:** proposed
 
-The ground scrolls left. 5-way up moves the buggy forward. 5-way down moves it back. Holes open in the green, small and large. Autoplay jumps them. Landing in a hole crashes, the scroll pauses, the buggy recovers, and the score is unchanged.
+The ground scrolls. With the power port at the bottom, 5-way right moves the buggy right and speeds the scroll up. 5-way left moves it left and slows the scroll down. 5-way up jumps. Holes open in the green, small and large. Autoplay jumps them while the switch is idle. Landing in a hole crashes, the scroll pauses, the buggy recovers, and the score is unchanged.
 
 **Tests**
 
 - [ ] `pio run` exits 0
-- [ ] 5-way up prints `POS` with a higher value than 5-way down, and the frame shows the buggy farther right, then farther left
+- [ ] Pushing the switch to the player's right prints a higher `POS` and a higher `SPEED` than pushing it left, and the frame shows the buggy move right, then left
+- [ ] 5-way up, toward the edge opposite the power port, prints `JUMP`, and the frame shows the buggy clearing a hole
 - [ ] With the 5-way idle, serial shows `JUMP` before a hole and the frame shows the buggy clearing it
 - [ ] Landing in a hole prints `CRASH` then `RECOVER`, and the scene is moving again
 - [ ] `SCORE` after recover equals `SCORE` before the crash
@@ -246,13 +247,13 @@ The second HUD line shows the date in the lives slot and the clock in the TIME s
 
 **State:** proposed
 
-Left alone, the buggy jumps holes and shoots rocks and attackers. Pushing the 5-way moves the buggy, and a press shoots. Score climbs. The clock stays on the HUD.
+Left alone, the buggy jumps holes and shoots rocks and attackers. Right and left change speed and position, up jumps, and a press shoots. Score climbs. The clock stays on the HUD.
 
 **Tests**
 
 - [ ] `pio run` exits 0
 - [ ] Hands off for one full course bar: serial shows at least one `JUMP` and at least one of `ROCK` or `ATTACKER`, and `SCORE` is higher at the end
-- [ ] During a later pass, 5-way up and down print `POS`, and a press prints `SHOT`
+- [ ] During a later pass, right and left print `POS` and `SPEED`, up prints `JUMP`, and a press prints `SHOT`
 - [ ] Screen still matches the reference layout, with a live score and a live `MM-DD  TIME HH:MM`
 - [ ] No lockup over that run
 - [ ] Results recorded in this section, then commit
