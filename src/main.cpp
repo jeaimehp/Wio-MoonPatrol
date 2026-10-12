@@ -266,8 +266,8 @@ static void soundUpdate() {
 
 // ---- Input -------------------------------------------------------------
 // 5-way pins as read on the user's terminal in its desk pose (checked by
-// hand, 2026-10-12): right is RIGHT, left is LEFT, up is DOWN, and down
-// (UP) is unused.
+// hand, 2026-10-12): right is RIGHT, left is LEFT, up is UP, and down
+// is unused.
 // The top-left button (KEY_C) changes mode and the top middle button
 // (KEY_B) toggles sound. Serial lines starting with I inject the same
 // inputs for testing: R and L hold for 10 frames, U jumps, P presses,
@@ -282,7 +282,7 @@ static Input readInput() {
   Input in;
   in.right = digitalRead(WIO_5S_RIGHT) == LOW || injRight > 0;
   in.left = digitalRead(WIO_5S_LEFT) == LOW || injLeft > 0;
-  in.up = digitalRead(WIO_5S_DOWN) == LOW || injUp;
+  in.up = digitalRead(WIO_5S_UP) == LOW || injUp;
   in.press = digitalRead(WIO_5S_PRESS) == LOW || injPress;
   in.mode = digitalRead(WIO_KEY_C) == LOW || injMode;
   in.sound = digitalRead(WIO_KEY_B) == LOW || injSound;
