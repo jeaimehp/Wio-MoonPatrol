@@ -5,7 +5,7 @@ Read this file at the start of a session, then `git log` and `git status`.
 
 ## Status
 
-**M5 is next.** M3 and M4 landed together in one commit (the user widened M3 mid-way: moving attackers, bombs, readable HUD, sound toggle). Their tests passed on serial with injected input; the physical 5-way and buttons still need one hands-on check by the user. M5–M6 are approved. Do not stop between milestones to ask permission to continue.
+**M5 is next.** Lives, the title screen, progressive attacker types, autoplay pace, and three shots in flight were added after M4 at the user's request (see M4b). M3 and M4 landed together in one commit (the user widened M3 mid-way: moving attackers, bombs, readable HUD, sound toggle). Their tests passed on serial with injected input; the physical 5-way and buttons still need one hands-on check by the user. M5–M6 are approved. Do not stop between milestones to ask permission to continue.
 
 Latest commit is M3+M4. The board is running that build.
 
@@ -77,7 +77,7 @@ On 2026-10-12 Cloudflare blocked that page, so the PNG is not in the repo. Downl
 
 [Moon Patrol - Atari 2600 (1080p@60fps)](https://www.youtube.com/watch?v=vGFMsMGQNuo) by Gen X Classic Gaming is the motion and sound reference. It is the 2600 game, the same look as `reference/atari-2600.png`, and it includes the sounds.
 
-Watch it before M3. Match the jump, the shots, the holes, the rocks, and the attackers to that video. Play the cues on `WIO_BUZZER`: drive, jump, shot, hit, and crash. Do not copy arcade AY register dumps or a soundtrack rip. Wi-Fi, NTP, a saved high score, lives, and game over stay out.
+Watch it before M3. Match the jump, the shots, the holes, the rocks, and the attackers to that video. Play the cues on `WIO_BUZZER`: drive, jump, shot, hit, and crash. Do not copy arcade AY register dumps or a soundtrack rip. Wi-Fi, NTP, and a saved high score stay out. (Lives and game over were added by the user on 2026-10-12; see Choices.)
 
 ### What the video shows (watched 2026-10-12)
 
@@ -174,15 +174,19 @@ Approving M1–M6 approves these choices. Say so if one of them should change be
 - Play uses the onboard 5-way switch. In this pose: right is `WIO_5S_DOWN`, left is `WIO_5S_UP`, up is `WIO_5S_RIGHT`, down is `WIO_5S_LEFT` and unused, press is `WIO_5S_PRESS`.
 - The top-left button, the upper button on the left edge in this pose, changes mode. From autoplay it starts a new game: score returns to 0, the field resets, and the 5-way is live. From a game it returns to autoplay and keeps the score. It does not matter that the 5-way has been idle. Expected pin `WIO_KEY_C`.
 - Right moves the buggy right and scrolls the ground faster. Left moves the buggy left and scrolls the ground slower. Releasing left or right leaves the buggy where it is and leaves the speed where it is.
-- Up jumps. Press shoots a ground bullet and an air bullet. Only one of each is in flight.
+- Up jumps. Press shoots a ground bullet and an air bullet. Up to three of each are in flight (user, 2026-10-12). Air shots also knock out bombs (`BOMB HIT`).
 - Rock destroyed: 100 points. Attacker destroyed: 200 points. Clearing a hole: 100 points (user, 2026-10-12; every score change in the 2600 video is +100, the first one on a cleared hole). A crash does not clear the score.
 - Attackers drop bombs straight down (salmon 2×6 dashes, as in the video). A bomb on the buggy crashes it; one landing well ahead can open a small crater.
 - Sound is off in autoplay by default, on when a new game starts, and the top middle button (`WIO_KEY_B`) toggles it any time. Serial prints `SOUND ON` / `SOUND OFF`.
 - HUD text is the 8×8 font at 2× (user asked for readable text); score at y 181, date/time at y 200, course bar at y 222. The reference's 5–7 px lines were too small on the desk.
-- The buddy boots in autoplay: cruise speed, buggy toward the left, jumps holes, and shoots threats. A new game stays a new game until the top-left button is pressed again.
+- The buddy boots in autoplay: buggy toward the left, jumps holes, shoots rocks, attackers, and bombs overhead. Autoplay picks its pace like a player: fast on open road, slow to line up a hole or rock, middle under nearby attackers, and it brakes or speeds up to get out from under a bomb. It holds its pace while airborne. A new game stays a new game until the top-left button is pressed again.
+- Lives (user, 2026-10-12): a game starts with 3, gains one at every 10,000 points up to 5 (`EXTRA LIFE`, `LIVES n`). Each crash in a game costs one. At 0: `GAME OVER` for 3 s, the title screen, then a fresh autoplay run at score 0. Autoplay has no lives.
+- During a game the second HUD line is the 2600 layout: the lives icon from the reference (14×5 at 2×), the count, and `TIME HH:MM`. Autoplay shows `MM-DD  TIME HH:MM`.
+- Title screen (traced from the video's first seconds): the MOON/PATROL logo and `©1983 ATARI` cycling green, pink, yellow, red, purple, magenta, white, blue every half second, with two of each attacker type flying around. It shows for 5 s before each new game (the top-left button or a press skips it) and between autoplay runs; one autoplay run is one course, about 3 minutes. Not at power-up.
+- Attacker types join as the score climbs (user, 2026-10-12): magenta from the start, the yellow saucer (16×7) from 3,000, the white pair (two 6×4 sprites) from 6,000. Each later type is faster, swings wider, and bombs more often. All are worth 200.
 - HUD, top to bottom, yellow on black: centered score; `MM-DD  TIME HH:MM` with a blinking colon; segmented course bar. Seconds are the blink, not extra digits.
 - Clock source is the Mac, sent as one line: `T2026-10-12 12:47:03`. Compile time is only a fallback before that line arrives.
-- Sound follows the 2600 video above and plays on `WIO_BUZZER`. Wi-Fi, NTP, a saved high score, lives, and game over stay out.
+- Sound follows the 2600 video above and plays on `WIO_BUZZER`. Wi-Fi, NTP, and a saved high score stay out.
 
 ## How to test
 
@@ -285,7 +289,7 @@ The board hung once: the core's `noTone()` waits on timer TC0, whose clock is on
 **Tests** (2026-10-12)
 
 - [x] `pio run` exits 0. Flash 65784 bytes.
-- [x] Press prints `SHOT`; six injected presses inside 0.5 s gave one `SHOT` (one of each in flight).
+- [x] Press prints `SHOT`; six injected presses inside 0.5 s gave one `SHOT` (one of each in flight). Later raised to three of each: eight presses in 0.4 s gave three `SHOT`s.
 - [x] One-shot rock: `ROCK 100`, `SCORE` +100.
 - [x] Two-shot rock: `ROCK HIT` on the first shot, `ROCK 100` on the second.
 - [x] Attacker: `ATTACKER 200`, `SCORE` +200 (autoplay and injected game).
@@ -294,6 +298,21 @@ The board hung once: the core's `noTone()` waits on timer TC0, whose clock is on
 - [x] Sound: autoplay boots `SOUND OFF`, `NEW` turns it on, `AUTO` turns it off, the sound button toggles (injected `IS`). Buzzer not yet confirmed by ear.
 - [ ] Physical press and the top middle button, by the user.
 - [x] Results recorded in this section, then commit (with M3).
+
+## M4b — Lives, title screen, attacker types, autoplay pace
+
+**State:** done (added by the user during M4, 2026-10-12)
+
+**Tests** (2026-10-12)
+
+- [x] `pio run` exits 0. Flash 70944 bytes.
+- [x] Top-left button in autoplay prints `TITLE`; 5 s later `NEW`, `SOUND ON`, `LIVES 3`, `SCORE 0`. A second press during the title skips it.
+- [x] Three crashes in an idle game: `LIVES 2`, `1`, `0`, then `GAME OVER`, `TITLE` 3 s later, `AUTO` 5 s after that (`test-captures/lives-title.log`).
+- [x] C920 `test-captures/title.jpg`: logo, copyright line, and all three attacker types on the title. `test-captures/game-hud.jpg`: lives icon, `3`, `TIME 12:47`.
+- [x] Autoplay pace: `SPEED` from 64 to 96 px/s across a minute (`test-captures/auto-pace.log`).
+- [x] Autoplay over 90 s: 2 crashes (`BY BOMB`, `BY HOLE`), 21 holes, 12 rocks, 5 attackers, score 4600 (`test-captures/auto-pace2.log`). Before bomb dodging and the lower bomb rates it was 5 crashes in 60 s, 4 by bombs.
+- [ ] Extra life at 10,000 not yet seen on the device; a hand-played game has not reached it.
+- [ ] Physical buttons and buzzer, by the user.
 
 ## M5 — Time and date in the game HUD
 
