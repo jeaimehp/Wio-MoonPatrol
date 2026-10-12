@@ -5,19 +5,19 @@ Read this file at the start of a session, then `git log` and `git status`.
 
 ## Status
 
-**M1–M6 are approved.** M1 is in progress: the firmware builds, and the upload has not finished.
+**M1 is done.** M2–M6 are approved. Start M2.
 
 | Milestone | State |
 | --- | --- |
 | M0 Handoff and local repo | done |
-| M1 Toolchain and device link | in progress |
+| M1 Toolchain and device link | done |
 | M2 Atari 2600 still scene | approved |
 | M3 Scroll, move, holes, and jump | approved |
 | M4 Shooting and score | approved |
 | M5 Time and date in the game HUD | approved |
 | M6 Desk-buddy pass | approved |
 
-Finish M1 before M2. Record test results under the milestone, commit, then start the next one.
+Finish a milestone, record its test results, commit, then start the next one.
 
 ## What this is
 
@@ -166,19 +166,19 @@ The repo was empty. This commit is the plan, the reference image, and the ignore
 
 ## M1 — Toolchain and device link
 
-**State:** in progress
+**State:** done
 
 A PlatformIO project builds and flashes. The panel lights, the screen is black, and serial prints `READY`. No playfield yet.
 
 **Tests** (2026-10-12)
 
 - [x] `python3 -m platformio run` exits 0. Seeed_Arduino_LCD 1.6.0. RAM 4000 bytes, flash 48976 bytes.
-- [ ] Upload to the Wio port exits 0. Failed: 1200 baud reset on `/dev/cu.usbmodem124301`, then `SAM-BA operation failed` at 0 of 96 pages. The Wio then left the USB bus. Do not use `/dev/cu.usbmodem21401`.
-- [ ] Serial shows `READY`
-- [ ] Backlight is on and the screen is black. A C920 frame after the failed upload shows the panel dark, with the room reflected in it, so the backlight is not confirmed on.
-- [ ] Results recorded in this section, then commit
+- [x] Upload exits 0. SAM-BA failed and dropped the board off USB. After a reset the bootloader volume `/Volumes/Arduino` was up (`UF2 Bootloader v3.7.0`, family `0x55114460`). Copying a UF2 of `firmware.bin` at address `0x4000` rebooted the board as `Seeed Wio Terminal` on `/dev/cu.usbmodem124301` (idProduct 32813).
+- [x] Serial shows `READY` four times at 115200.
+- [x] C920 frame `test-captures/m1.jpg` (not committed): backlight is on and the panel is black. The blue glow is the webcam's own light reflected in the glass.
+- [x] Results recorded in this section, then commit
 
-To resume: power-cycle the terminal, or double-click the reset button beside the power switch, until `ioreg` shows a Seeed Wio Terminal again. Then `python3 -m platformio run -t upload --upload-port <that port>`.
+Later flashes: if `bossac` fails, double-click reset until `/Volumes/Arduino` appears, then copy a UF2. Do not flash `/dev/cu.usbmodem21401`.
 
 ## M2 — Atari 2600 still scene
 
@@ -267,7 +267,7 @@ Left alone, the buddy boots in autoplay: the buggy jumps holes and shoots rocks 
 ## Next session
 
 1. Read this file.
-2. M1–M6 are approved. Do the first milestone that is not `done`. M1 is in progress until the upload, `READY`, and backlight checks pass.
+2. M1 is done. M2–M6 are approved. Do the first milestone that is not `done`.
 3. If they are approved, do the first milestone that is not `done`.
 4. Reconfirm the Wio port before flashing. Skip `/dev/cu.usbmodem21401`.
 5. For every screen check, capture from the C920 only (`imagesnap -d "HD Pro Webcam C920"`). Leave the JPEG in `test-captures/`.
