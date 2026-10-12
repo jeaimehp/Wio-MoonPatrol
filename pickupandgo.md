@@ -86,7 +86,7 @@ Seeed Wio Terminal, ATSAMD51P19 (the SAMD51 board this project calls the D51). C
 | Vendor / product | Seeed Studio, idVendor 10374 (0x2886), idProduct 32813 (0x802D) |
 | MCU | ATSAMD51P19, Cortex-M4F, 120 MHz, 512 KB flash, 192 KB RAM, 4 MB external flash |
 | Display | 2.4 inch, 320×240, ILI9341 |
-| Input | Top buttons `WIO_KEY_A` / `WIO_KEY_B` / `WIO_KEY_C`, five-way `WIO_5S_UP` `DOWN` `LEFT` `RIGHT` `PRESS` |
+| Input | Three top buttons `WIO_KEY_A` / `WIO_KEY_B` / `WIO_KEY_C`. The blue 5-way switch on the right of the bezel is the control meant by "joystick": `WIO_5S_UP` `DOWN` `LEFT` `RIGHT` `PRESS`. No separate joystick is attached. |
 | Also on the board | Buzzer `WIO_BUZZER`, backlight `LCD_BACKLIGHT`, LIS3DH, light sensor, microphone, microSD, RTL8720DN Wi-Fi/BLE |
 
 `/dev/cu.usbmodem21401` is a Particle Xenon on the same computer. Do not flash it.
@@ -123,11 +123,12 @@ imagesnap -d "HD Pro Webcam C920" -w 2.0 test-captures/<milestone>.jpg
 Approving M1–M6 approves these choices. Say so if one of them should change before M1.
 
 - Draw on a 2-pixel grid so the scene stays chunky like the 2600. One blue hill, not the arcade’s two ranges.
-- The ground scrolls left at a steady pace. Five-way up moves the buggy forward (right). Five-way down moves it back (left). It stays on screen.
-- Five-way click shoots. A shot fires a ground bullet and an air bullet. Only one of each is in flight.
+- Play uses the onboard 5-way switch only. Up is toward the top edge of the terminal. Down is toward the bottom edge. Press is the click. Left and right are unused.
+- The ground scrolls left at a steady pace. 5-way up moves the buggy forward (right). 5-way down moves it back (left). It stays on screen.
+- 5-way press shoots. A shot fires a ground bullet and an air bullet. Only one of each is in flight.
 - Jump is automatic in autoplay and while the player is driving, so holes are still cleared. Click does not jump. Their Python code jumps on ArrowUp. This plan does not.
 - Rock destroyed: 100 points. Attacker destroyed: 200 points. A crash does not clear the score.
-- Autoplay runs when the stick has been idle for about 3 seconds: it holds the buggy on the left, jumps holes, and shoots threats. Pushing the stick takes over movement immediately. A click takes over shooting immediately. Auto-jump keeps running during play.
+- Autoplay runs when the 5-way has been idle for about 3 seconds: it holds the buggy on the left, jumps holes, and shoots threats. Pushing up or down takes over movement immediately. A press takes over shooting immediately. Auto-jump keeps running during play.
 - HUD, top to bottom, yellow on black: centered score; `MM-DD  TIME HH:MM` with a blinking colon; segmented course bar. Seconds are the blink, not extra digits.
 - Clock source is the Mac, sent as one line: `T2026-10-12 12:47:03`. Compile time is only a fallback before that line arrives.
 - Sound, Wi-Fi, NTP, saved high score, lives, and game over are outside this plan.
@@ -197,13 +198,13 @@ A static frame matches the reference layout. Nothing moves yet.
 
 **State:** proposed
 
-The ground scrolls left. Five-way up moves the buggy forward. Five-way down moves it back. Holes open in the green, small and large. Autoplay jumps them. Landing in a hole crashes, the scroll pauses, the buggy recovers, and the score is unchanged.
+The ground scrolls left. 5-way up moves the buggy forward. 5-way down moves it back. Holes open in the green, small and large. Autoplay jumps them. Landing in a hole crashes, the scroll pauses, the buggy recovers, and the score is unchanged.
 
 **Tests**
 
 - [ ] `pio run` exits 0
-- [ ] Five-way up prints `POS` with a higher value than five-way down, and the frame shows the buggy farther right, then farther left
-- [ ] With the stick idle, serial shows `JUMP` before a hole and the frame shows the buggy clearing it
+- [ ] 5-way up prints `POS` with a higher value than 5-way down, and the frame shows the buggy farther right, then farther left
+- [ ] With the 5-way idle, serial shows `JUMP` before a hole and the frame shows the buggy clearing it
 - [ ] Landing in a hole prints `CRASH` then `RECOVER`, and the scene is moving again
 - [ ] `SCORE` after recover equals `SCORE` before the crash
 - [ ] Results recorded in this section, then commit
@@ -217,7 +218,7 @@ Ground shots remove rocks. Air shots remove attackers. The yellow score matches 
 **Tests**
 
 - [ ] `pio run` exits 0
-- [ ] Five-way click prints `SHOT`. Only one ground bullet and one air bullet exist at a time
+- [ ] 5-way press prints `SHOT`. Only one ground bullet and one air bullet exist at a time
 - [ ] Destroying a one-shot rock prints `ROCK 100` and increases `SCORE` by 100
 - [ ] A two-shot rock is still there after one `SHOT` and prints `ROCK 100` only on the second hit
 - [ ] Destroying an attacker prints `ATTACKER 200` and increases `SCORE` by 200
@@ -245,13 +246,13 @@ The second HUD line shows the date in the lives slot and the clock in the TIME s
 
 **State:** proposed
 
-Left alone, the buggy jumps holes and shoots rocks and attackers. Taking the stick moves the buggy, and a click shoots. Score climbs. The clock stays on the HUD.
+Left alone, the buggy jumps holes and shoots rocks and attackers. Pushing the 5-way moves the buggy, and a press shoots. Score climbs. The clock stays on the HUD.
 
 **Tests**
 
 - [ ] `pio run` exits 0
 - [ ] Hands off for one full course bar: serial shows at least one `JUMP` and at least one of `ROCK` or `ATTACKER`, and `SCORE` is higher at the end
-- [ ] During a later pass, five-way up and down print `POS`, and a click prints `SHOT`
+- [ ] During a later pass, 5-way up and down print `POS`, and a press prints `SHOT`
 - [ ] Screen still matches the reference layout, with a live score and a live `MM-DD  TIME HH:MM`
 - [ ] No lockup over that run
 - [ ] Results recorded in this section, then commit
